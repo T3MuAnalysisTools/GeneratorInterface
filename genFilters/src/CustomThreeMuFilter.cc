@@ -5,13 +5,13 @@ CustomThreeMuFilter::CustomThreeMuFilter(const edm::ParameterSet& iConfig) :
   src_(iConfig.getUntrackedParameter<edm::InputTag>("src",edm::InputTag(std::string("generator"),"unsmeared"))),
   token_(consumes<edm::HepMCProduct>(src_)),
   numRequired_(iConfig.getParameter<int>("NumRequired")),
-  acceptMore_(iConfig.getParameter<bool>("AcceptMore")),
   particleID_(iConfig.getParameter< std::vector<int> >("ParticleID")),
   ptMin_(iConfig.getParameter< std::vector<double> >("PtMin")),
   etaMax_(iConfig.getParameter< std::vector<double> >("EtaMax")),
   status_(iConfig.getParameter< std::vector<int> >("Status")),
   invMassMin_(iConfig.getParameter<double>("invMassMin")),
   invMassMax_(iConfig.getParameter<double>("invMassMax")),
+  maxDr_(iConfig.getParameter<double>("maxDr")),
 
   totalEvents_(0), passedEvents_(0)
 {
@@ -70,10 +70,14 @@ bool CustomThreeMuFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSet
   
   const HepMC::GenEvent * myGenEvent = evt->GetEvent();
   TLorentzVector sum(0,0,0,0);  
-  for ( HepMC::GenEvent::particle_const_iterator p = myGenEvent->particles_begin();
+  std::vector<float> phis;
+  std::vector<float> etas;
+  std::vector<float> dR; //dR.push_back(0);
+
+  for ( HepMC::GenEvent::particle_const_iterator p = myGenEvent->particles_begin(); // loop over particles
 	p != myGenEvent->particles_end(); ++p ) {
     
-    for (unsigned int i = 0; i < particleID_.size(); ++i) {
+    for (unsigned int i = 0; i < particleID_.size(); ++i) {  // loop over targets
       if ((particleID_[i] == 0 || abs(particleID_[i]) == abs((*p)->pdg_id())) &&
 	  (*p)->momentum().perp() > ptMin_[i] &&
 	  fabs((*p)->momentum().eta()) < etaMax_[i] &&
@@ -82,11 +86,35 @@ bool CustomThreeMuFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSet
 
 	if(motherID_[i] == 0 ){ // do not check for mother ID if not sepcified
 	  TLorentzVector par;par.SetPxPyPzE((*p)->momentum().px(),(*p)->momentum().py(),(*p)->momentum().pz(),(*p)->momentum().e());
-	  //	  par.Print();
-	  sum+=par;
-	  nFound++;
 
+	  for(unsigned int k=0; k < phis.size(); k++){
+	    float dphi = phis.at(k) - (*p)->momentum().phi();
+	    if(dphi >= TMath::Pi()) dphi = dphi-2*TMath::Pi();
+	    if(dphi <=-TMath::Pi()) dphi = dphi+2*TMath::Pi();
+	    dR.push_back(sqrt(pow(dphi,2) + pow(etas.at(k) - (*p)->momentum().eta(),2)));
+	  }
+
+	  bool passdr(true);
+	  for(auto &l:dR){if(l>=maxDr_){passdr=false;break;}}
+
+	  if(passdr){
+	    int size = phis.size();
+	    if(size>=numRequired_-1){
+	      if( (sum+par).M() > invMassMin_  && (sum+par).M() < invMassMax_ ){
+		phis.push_back((*p)->momentum().phi());
+		etas.push_back((*p)->momentum().eta());
+		sum+=par;
+		nFound++;
+	      }
+	    }else{
+              phis.push_back((*p)->momentum().phi());
+              etas.push_back((*p)->momentum().eta());
+              sum+=par;
+              nFound++;
+	      
+	    }
 	  break; // only match a given particle once!
+	  }
 	}
 	else{
 	  bool hascorrectmother=false;
@@ -103,14 +131,33 @@ bool CustomThreeMuFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSet
 	}
       }
     } // loop over targets
-    
-    if (acceptMore_ && nFound == numRequired_) break; // stop looking if we don't mind having more
+
+
+
+    if (nFound == numRequired_) break; // stop looking if we don't mind having more
   } // loop over particles
+
+
   
-  if (nFound == numRequired_ and sum.M() > invMassMin_ and sum.M() < invMassMax_) {
-  //    if (nFound == numRequired_){
-    std::cout<<"sum: "<< sum.M() <<std::endl;
-      //    sum.Print();
+  /*  std::cout<<" ---- "   << std::endl;
+  for(unsigned int i=0; i  < phis.size()-1; i++){
+    for(unsigned int j=i+1; j  < phis.size(); j++){
+      float dphi = phis.at(i) - phis.at(j);
+      if(dphi >= TMath::Pi()) dphi = dphi-2*TMath::Pi();
+      if(dphi <=-TMath::Pi()) dphi = dphi+2*TMath::Pi();
+      std::cout<<"  dphi " << dphi<< " phi1  "<< phis.at(i)<< "  phi2  "<<  phis.at(j)<< std::endl;
+      std::cout<<"  deta " << etas.at(i) - etas.at(j) << " eta1  "<< etas.at(i)<< "  eta2  "<<  etas.at(j)<< std::endl;
+      std::cout<<"  dR "<< sqrt(pow(dphi,2) + pow(etas.at(i) - etas.at(j),2)) << std::endl;
+    }
+  }
+  */
+  //  if (nFound == numRequired_)  std::cout<<" numFound:  "<< nFound<< "  dR size   " << dR.size() <<std::endl;
+  //  if (nFound == numRequired_)  for(auto &l:dR){std::cout<<" dR  "<< l <<std::endl;}
+  
+  if (nFound == numRequired_) {
+    
+    //    std::cout<<"sum: "<< sum.M() <<std::endl;
+    //    sum.Print();
     passedEvents_++;
     return true;
   } else {

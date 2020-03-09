@@ -65,8 +65,9 @@ class CustomThreeMuFilter : public edm::EDFilter {
   std::vector<double> ptMin_;      // minimum Pt of particles
   std::vector<double> etaMax_;     // maximum fabs(eta) of particles
   std::vector<int> status_;        // status of particles
-  double invMassMin_;              // min invariant mass of all particles
-  double invMassMax_;              // max invariant mass of all particles
+  float invMassMin_;               // min invariant mass of all particles
+  float invMassMax_;               // max invariant mass of all particles
+  float maxDr_;                    // max dR between any of the particles
   int totalEvents_;                // counters
   int passedEvents_;
 };
