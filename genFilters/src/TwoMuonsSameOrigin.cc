@@ -73,21 +73,33 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
   std::vector<float> phis;
   std::vector<float> etas;
   std::vector<float> dR; //dR.push_back(0);
+  std::vector<int> vtxBC;
+  bool twomuons(false);
 
-  std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
+  //std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
 
 
   for ( HepMC::GenEvent::particle_const_iterator p = myGenEvent->particles_begin(); // loop over particles
 	p != myGenEvent->particles_end(); ++p ) {
     
 
-    std::cout<<"What particles we have in the generated pythia event:  "<< (*p)->pdg_id()  << std::endl;
+    //std::cout<<"What particles we have in the generated pythia event:  "<< (*p)->pdg_id()  << std::endl;
+    //std::cout<<"The particle with barcode "<< (*p)->barcode()  <<" has pdgid "<< (*p)->pdg_id() <<std::endl;
 
     for (unsigned int i = 0; i < particleID_.size(); ++i) {  // loop over targets
       if ((particleID_[i] == 0 || abs(particleID_[i]) == abs((*p)->pdg_id())) &&
 	  (*p)->momentum().perp() > ptMin_[i] &&
 	  fabs((*p)->momentum().eta()) < etaMax_[i] &&
 	  (status_[i] == 0 || (*p)->status() == status_[i])) {
+
+    //std::cout<<"Barcode of production vertex of muon is:  "<< (*p)->production_vertex()->barcode()  << std::endl;
+    twomuons=std::find(vtxBC.begin(), vtxBC.end(), (*p)->production_vertex()->barcode()) != vtxBC.end();
+    vtxBC.push_back((*p)->production_vertex()->barcode());
+
+    if(twomuons){
+      std::cout<<"Two muons with same vertex found at event no. "<<totalEvents_<<std::endl;
+    }
+    
 
 
 	if(motherID_[i] == 0 ){ // do not check for mother ID if not sepcified
@@ -140,7 +152,7 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
 
 
 
-    if (nFound == numRequired_) break; // stop looking if we don't mind having more
+    if (nFound == numRequired_&&twomuons) break; // stop looking if we don't mind having more
   } // loop over particles
 
 
@@ -160,7 +172,7 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
   //  if (nFound == numRequired_)  std::cout<<" numFound:  "<< nFound<< "  dR size   " << dR.size() <<std::endl;
   //  if (nFound == numRequired_)  for(auto &l:dR){std::cout<<" dR  "<< l <<std::endl;}
   
-  if (nFound == numRequired_) {
+  if (nFound == numRequired_&&twomuons) {
     
     //    std::cout<<"sum: "<< sum.M() <<std::endl;
     //    sum.Print();
