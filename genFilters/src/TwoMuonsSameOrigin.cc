@@ -75,6 +75,7 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
   std::vector<float> dR; //dR.push_back(0);
   std::vector<int> vtxBC;
   bool twomuons(false);
+  int twomuon_i(0);
 
   //std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
 
@@ -92,14 +93,23 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
 	  fabs((*p)->momentum().eta()) < etaMax_[i] &&
 	  (status_[i] == 0 || (*p)->status() == status_[i])) {
 
-    //std::cout<<"Barcode of production vertex of muon is:  "<< (*p)->production_vertex()->barcode()  << std::endl;
-    twomuons=std::find(vtxBC.begin(), vtxBC.end(), (*p)->production_vertex()->barcode()) != vtxBC.end();
-    vtxBC.push_back((*p)->production_vertex()->barcode());
 
-    if(twomuons){
-      std::cout<<"Two muons with same vertex found at event no. "<<totalEvents_<<std::endl;
-    }
-    
+    //std::cout<<"Barcode of production vertex of muon is:  "<< (*p)->production_vertex()->barcode()  << std::endl;
+    if(!twomuons&&twomuon_i==0){
+      
+      twomuons=std::find(vtxBC.begin(), vtxBC.end(), (*p)->production_vertex()->barcode()) != vtxBC.end();
+      vtxBC.push_back((*p)->production_vertex()->barcode());
+      twomuon_i++;
+      
+      //std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
+      //if(twomuons){
+      //  std::cout<<"Two muons with same vertex found at event no. "<<totalEvents_<<std::endl;
+      //  std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
+      //  std::cout<<"Energy of muon is: "<<(*p)->momentum().e()<<std::endl;
+      //  break;
+      //}
+
+    }//end if statement
 
 
 	if(motherID_[i] == 0 ){ // do not check for mother ID if not sepcified
@@ -147,12 +157,18 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
 	    break; // only match a given particle once! 
 	  }
 	}
+    
+
+
       }
     } // loop over targets
 
 
 
-    if (nFound == numRequired_&&twomuons) break; // stop looking if we don't mind having more
+    if (nFound >= numRequired_&&twomuons){
+      std::cout<<"Two muons with same vertex found at event no. "<<totalEvents_<<std::endl;
+      break; // stop looking if we don't mind having more
+    }
   } // loop over particles
 
 
@@ -172,7 +188,7 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
   //  if (nFound == numRequired_)  std::cout<<" numFound:  "<< nFound<< "  dR size   " << dR.size() <<std::endl;
   //  if (nFound == numRequired_)  for(auto &l:dR){std::cout<<" dR  "<< l <<std::endl;}
   
-  if (nFound == numRequired_&&twomuons) {
+  if (nFound >= numRequired_&&twomuons) {
     
     //    std::cout<<"sum: "<< sum.M() <<std::endl;
     //    sum.Print();
