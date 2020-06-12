@@ -75,9 +75,10 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
   std::vector<float> dR; //dR.push_back(0);
   std::vector<int> vtxBC;
   bool twomuons(false);
-  int twomuon_i(0);
+  std::vector<int> vtxBC3;
+  bool threemuons(false);
 
-  //std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
+  std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
 
 
   for ( HepMC::GenEvent::particle_const_iterator p = myGenEvent->particles_begin(); // loop over particles
@@ -86,28 +87,63 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
 
     //std::cout<<"What particles we have in the generated pythia event:  "<< (*p)->pdg_id()  << std::endl;
     //std::cout<<"The particle with barcode "<< (*p)->barcode()  <<" has pdgid "<< (*p)->pdg_id() <<std::endl;
+    int twomuon_i(0);
+    int threemuon_i(0);
+    int VertexBC;
+    int muoncount1;
+    int muoncount2;
 
     for (unsigned int i = 0; i < particleID_.size(); ++i) {  // loop over targets
       if ((particleID_[i] == 0 || abs(particleID_[i]) == abs((*p)->pdg_id())) &&
 	  (*p)->momentum().perp() > ptMin_[i] &&
 	  fabs((*p)->momentum().eta()) < etaMax_[i] &&
 	  (status_[i] == 0 || (*p)->status() == status_[i])) {
-
-
+     
+     
     //std::cout<<"Barcode of production vertex of muon is:  "<< (*p)->production_vertex()->barcode()  << std::endl;
+    
+    
     if(!twomuons&&twomuon_i==0){
+      std::cout<<"Barcode of production vertex of muon2 with barcode "<< (*p)->barcode()  << " is "<< (*p)->production_vertex()->barcode()  << std::endl;
       
       twomuons=std::find(vtxBC.begin(), vtxBC.end(), (*p)->production_vertex()->barcode()) != vtxBC.end();
       vtxBC.push_back((*p)->production_vertex()->barcode());
       twomuon_i++;
       
       //std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
-      //if(twomuons){
-      //  std::cout<<"Two muons with same vertex found at event no. "<<totalEvents_<<std::endl;
+      if(twomuons){
+        std::cout<<"Found something at event no. "<<totalEvents_<<std::endl;
       //  std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
-      //  std::cout<<"Energy of muon is: "<<(*p)->momentum().e()<<std::endl;
+        std::cout<<"Energy of muon is: "<<(*p)->momentum().e()<<std::endl;
       //  break;
-      //}
+      }
+
+    }//end if statement
+    
+    
+    if(!threemuons&&threemuon_i==0){
+      for ( HepMC::GenVertex::particles_in_const_iterator otp = (*p)->production_vertex()->particles_in_const_begin(); otp != (*p)->production_vertex()->particles_in_const_end(); ++otp){
+        VertexBC=(*otp)->production_vertex()->barcode();
+        break;
+	    }
+      std::cout<<"Barcode of production vertex of muon3 with barcode "<< (*p)->barcode()  << " is "<< (*p)->production_vertex()->barcode()  << " and its grandparent vertex is "<< VertexBC << std::endl;
+      
+      muoncount1=std::count(vtxBC3.begin(), vtxBC3.end(), (*p)->production_vertex()->barcode());
+      muoncount2=std::count(vtxBC3.begin(), vtxBC3.end(), VertexBC);
+      std::cout<<"muoncount1 is: "<<muoncount1<<std::endl;
+      std::cout<<"muoncount2 is: "<<muoncount2<<std::endl;
+      vtxBC3.push_back(VertexBC);
+      vtxBC3.push_back((*p)->production_vertex()->barcode());
+      threemuon_i++;
+      
+      //std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
+      if(muoncount1>=2||muoncount2>=2){
+        threemuons=true;
+        std::cout<<"Found 3 muons & same vertex at event no. "<<totalEvents_<<std::endl;
+      //  std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
+        std::cout<<"Energy of muon is: "<<(*p)->momentum().e()<<std::endl;
+      //  break;
+      }
 
     }//end if statement
 
@@ -164,9 +200,12 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
     } // loop over targets
 
 
-
     if (nFound >= numRequired_&&twomuons){
-      std::cout<<"Two muons with same vertex found at event no. "<<totalEvents_<<std::endl;
+      std::cout<<"Two muons found with same vertex at "<<totalEvents_<<std::endl;
+    }
+    
+    if (nFound >= numRequired_&&threemuons){
+      std::cout<<"Three muons found found at event no. "<<totalEvents_<<std::endl;
       break; // stop looking if we don't mind having more
     }
   } // loop over particles
@@ -188,7 +227,7 @@ bool TwoMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSetu
   //  if (nFound == numRequired_)  std::cout<<" numFound:  "<< nFound<< "  dR size   " << dR.size() <<std::endl;
   //  if (nFound == numRequired_)  for(auto &l:dR){std::cout<<" dR  "<< l <<std::endl;}
   
-  if (nFound >= numRequired_&&twomuons) {
+  if (nFound >= numRequired_&&threemuons) {
     
     //    std::cout<<"sum: "<< sum.M() <<std::endl;
     //    sum.Print();
