@@ -75,8 +75,11 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
   std::vector<float> dR; //dR.push_back(0);
   std::vector<int> vtxBC;
   bool twomuons(false);
-  std::vector<int> vtxBC3;
-  bool threemuons(false);
+  std::vector<int> vtxBC3;//barcodes of vertices
+  std::vector<int> ParBC1;//To store only the parent vertices of same origin muons
+  std::vector<int> ParBC2;
+  bool threemuons(false);//whether or not three muons have been found
+  bool sameparent(false);
 
   //std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
 
@@ -87,9 +90,10 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
 
     //std::cout<<"What particles we have in the generated pythia event:  "<< (*p)->pdg_id()  << std::endl;
     //std::cout<<"The particle with barcode "<< (*p)->barcode()  <<" has pdgid "<< (*p)->pdg_id() <<std::endl;
-    int twomuon_i(0);
-    int threemuon_i(0);
-    int VertexBC;
+    int twomuon_i(0);//To make sure that one particle is counted only once (there is a loop inside which runs thrice)
+    int threemuon_i(0);//To make sure that one particle is counted only once (there is a loop inside which runs thrice)
+    int VertexBC; //grandparent vertex barcode
+    int VertexBCParent;
     int muoncount1;
     int muoncount2;
 
@@ -101,9 +105,9 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
      
      
     //std::cout<<"Barcode of production vertex of muon is:  "<< (*p)->production_vertex()->barcode()  << std::endl;
-    std::cout<<"Muon "<<i<< " has Px "<<(*p)->momentum().px()<<" Py "<<(*p)->momentum().py()<<" Pz "<<(*p)->momentum().pz()<<" E "<<(*p)->momentum().e()<< std::endl;
+    //std::cout<<"Muon "<<i<< " has Px "<<(*p)->momentum().px()<<" Py "<<(*p)->momentum().py()<<" Pz "<<(*p)->momentum().pz()<<" E "<<(*p)->momentum().e()<< std::endl;
     
-    
+    /*
     if(!twomuons&&twomuon_i==0){
       std::cout<<"Barcode of production vertex of muon2 with barcode "<< (*p)->barcode()  << " is "<< (*p)->production_vertex()->barcode()  << std::endl;
       
@@ -121,6 +125,7 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
       }
 
     }//end if statement
+    */
     
     
     if(!threemuons&&threemuon_i==0){
@@ -128,23 +133,96 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
         VertexBC=(*otp)->production_vertex()->barcode();
         break;
 	    }
-      std::cout<<"Barcode of production vertex of muon3 with barcode "<< (*p)->barcode()  << " is "<< (*p)->production_vertex()->barcode()  << " and its grandparent vertex is "<< VertexBC << std::endl;
+      //std::cout<<"Barcode of production vertex of muon3 with barcode "<< (*p)->barcode()  << " is "<< (*p)->production_vertex()->barcode()  << " and its grandparent vertex is "<< VertexBC << std::endl;
       
-      muoncount1=std::count(vtxBC3.begin(), vtxBC3.end(), (*p)->production_vertex()->barcode());
+      VertexBCParent=(*p)->production_vertex()->barcode();
+      muoncount1=std::count(vtxBC3.begin(), vtxBC3.end(), VertexBCParent);
       muoncount2=std::count(vtxBC3.begin(), vtxBC3.end(), VertexBC);
-      std::cout<<"muoncount1 is: "<<muoncount1<<std::endl;
-      std::cout<<"muoncount2 is: "<<muoncount2<<std::endl;
+      //std::cout<<"muoncount1 is: "<<muoncount1<<std::endl;
+      //std::cout<<"muoncount2 is: "<<muoncount2<<std::endl;
+      vtxBC3.push_back(VertexBCParent);
       vtxBC3.push_back(VertexBC);
-      vtxBC3.push_back((*p)->production_vertex()->barcode());
       threemuon_i++;
+      
+      if(muoncount1<2&&muoncount2<2&&(muoncount1+muoncount2)>=2){
+        //std::cout<< "Something is going on" << std::endl;
+      }
       
       //std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
       if(muoncount1>=2||muoncount2>=2){
-        std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
+      
+        int max_count1=0;//(maximum) frequency of occurrence of parent vertex
+        int max_count2=0;
+        
+        if(muoncount1>=2){//basically, figure out all the vertices, check if two have a common parent
+         for(i=0;i<vtxBC3.size();i++){
+           if(vtxBC3[i]==VertexBCParent){
+            if(i%2==0){
+              ParBC1.push_back(vtxBC3[i]);
+            }
+            else if(i%2==1){
+              ParBC1.push_back(vtxBC3[i-1]);
+            }
+           }
+         }
+         
+         std::unordered_map<int, int> mp; //This somehow seems to store things like a histogram, so you can keep track of frequency
+         int n1=ParBC1.size(); 
+         
+         for (int i = 0; i < n1; i++){
+           mp[ParBC1[i]]++;
+         }
+         
+         for (auto x : mp){//uses x.second to the frequency of each element
+           if(x.second>max_count1){
+             max_count1=x.second;
+           }
+           //std::cout<<x.first<<" occurs "<< x.second  << " time(s) "<< std::endl;
+         }
+         
+         
+        }
+        
+        
+        if(muoncount2>=2){//basically, figure out all the vertices, check if two have a common parent
+         for(i=0;i<vtxBC3.size();i++){
+           if(vtxBC3[i]==VertexBC){
+            if(i%2==0){
+              ParBC2.push_back(vtxBC3[i]);
+            }
+            else if(i%2==1){
+              ParBC2.push_back(vtxBC3[i-1]);
+            }
+           }
+         }
+         
+         std::unordered_map<int, int> mp; //This somehow seems to store things like a histogram, so you can keep track of frequency
+         int n2=ParBC2.size(); 
+         
+         for (int i = 0; i < n2; i++){
+           mp[ParBC2[i]]++;
+         }
+         
+         for (auto x : mp){//uses x.second to the frequency of each element
+           if(x.second>max_count2){
+             max_count2=x.second;
+           }
+           //std::cout<<x.first<<" occurs "<< x.second  << " time(s) "<< std::endl;
+         }
+         
+         
+        }
+        
+        
+        if(max_count1>=2||max_count2>=2){
+          std::cout<<"The last muon has Px "<<(*p)->momentum().px()<<" Py "<<(*p)->momentum().py()<<" Pz "<<(*p)->momentum().pz()<<" E "<<(*p)->momentum().e()<< std::endl;
+          sameparent=true;
+        }
+        
+        
         threemuons=true;
-        std::cout<<"Found 3 muons & same vertex at event no. "<<totalEvents_<<std::endl;
+        //std::cout<<"Found 3 muons & same vertex at event no. "<<totalEvents_<<std::endl;
       //  std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
-        std::cout<<"Energy of muon is: "<<(*p)->momentum().e()<<std::endl;
       //  break;
       }
 
@@ -207,8 +285,8 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
     //  std::cout<<"Two muons found with same vertex at "<<totalEvents_<<std::endl;
     //}
     
-    if (nFound >= numRequired_&&threemuons){
-      std::cout<<"Three muons found found at event no. "<<totalEvents_<<std::endl;
+    if (nFound >= numRequired_&&threemuons&&sameparent){
+      std::cout<<"Three muons found at event no. "<<totalEvents_<<" with two having the same parent."<<std::endl;
       break; // stop looking if we don't mind having more
     }
   } // loop over particles
@@ -230,7 +308,7 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
   //  if (nFound == numRequired_)  std::cout<<" numFound:  "<< nFound<< "  dR size   " << dR.size() <<std::endl;
   //  if (nFound == numRequired_)  for(auto &l:dR){std::cout<<" dR  "<< l <<std::endl;}
   
-  if (nFound >= numRequired_&&threemuons) {
+  if (nFound >= numRequired_&&threemuons&&sameparent) {
     
     //    std::cout<<"sum: "<< sum.M() <<std::endl;
     //    sum.Print();
