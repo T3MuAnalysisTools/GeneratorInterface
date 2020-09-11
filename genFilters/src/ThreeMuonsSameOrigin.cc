@@ -96,6 +96,8 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
     int VertexBCParent;
     int muoncount1;
     int muoncount2;
+    
+    //std::cout<<"Eta Max is:  "<< etaMax_[0]  << std::endl;
 
     for (unsigned int i = 0; i < particleID_.size(); ++i) {  // loop over targets
       if ((particleID_[i] == 0 || abs(particleID_[i]) == abs((*p)->pdg_id())) &&
@@ -221,6 +223,7 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
         
         
         threemuons=true;
+        
         //std::cout<<"Found 3 muons & same vertex at event no. "<<totalEvents_<<std::endl;
       //  std::cout<<"Pt is:  "<< (*p)->momentum().perp() << " &eta is: "<< fabs((*p)->momentum().eta())  << std::endl;
       //  break;
@@ -284,8 +287,11 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
     //if (nFound >= numRequired_&&twomuons){
     //  std::cout<<"Two muons found with same vertex at "<<totalEvents_<<std::endl;
     //}
+    //if(sameparent){
+    //  std::cout<<"nFound is: "<<nFound<<" sameparent: "<<sameparent<<" threemuons: "<<threemuons<< std::endl;
+    //}
     
-    if (nFound >= numRequired_&&threemuons&&sameparent){
+    if (threemuons&&sameparent){//nFound >= numRequired_&&
       std::cout<<"Three muons found at event no. "<<totalEvents_<<" with two having the same parent."<<std::endl;
       break; // stop looking if we don't mind having more
     }
@@ -308,7 +314,7 @@ bool ThreeMuonsSameOrigin::filter(edm::Event& iEvent, const edm::EventSetup& iSe
   //  if (nFound == numRequired_)  std::cout<<" numFound:  "<< nFound<< "  dR size   " << dR.size() <<std::endl;
   //  if (nFound == numRequired_)  for(auto &l:dR){std::cout<<" dR  "<< l <<std::endl;}
   
-  if (nFound >= numRequired_&&threemuons&&sameparent) {
+  if (threemuons&&sameparent) {//nFound >= numRequired_&&
     
     //    std::cout<<"sum: "<< sum.M() <<std::endl;
     //    sum.Print();
