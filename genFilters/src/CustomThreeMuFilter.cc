@@ -116,6 +116,8 @@ bool CustomThreeMuFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSet
 	  break; // only match a given particle once!
 	  }
 	}
+
+	//  ---  Modified in case of one wants to control the Mo particle of muons
 	else{
 	  bool hascorrectmother=false;
 	  for ( HepMC::GenVertex::particles_in_const_iterator mo = (*p)->production_vertex()->particles_in_const_begin(); mo != (*p)->production_vertex()->particles_in_const_end(); ++mo){
@@ -129,35 +131,21 @@ bool CustomThreeMuFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSet
 	    break; // only match a given particle once! 
 	  }
 	}
+
+      
+
+
       }
     } // loop over targets
 
 
 
-    if (nFound == numRequired_) break; // stop looking if we don't mind having more
+    if (nFound == numRequired_) break;  // stop looking if we don't mind having more
   } // loop over particles
 
 
   
-  /*  std::cout<<" ---- "   << std::endl;
-  for(unsigned int i=0; i  < phis.size()-1; i++){
-    for(unsigned int j=i+1; j  < phis.size(); j++){
-      float dphi = phis.at(i) - phis.at(j);
-      if(dphi >= TMath::Pi()) dphi = dphi-2*TMath::Pi();
-      if(dphi <=-TMath::Pi()) dphi = dphi+2*TMath::Pi();
-      std::cout<<"  dphi " << dphi<< " phi1  "<< phis.at(i)<< "  phi2  "<<  phis.at(j)<< std::endl;
-      std::cout<<"  deta " << etas.at(i) - etas.at(j) << " eta1  "<< etas.at(i)<< "  eta2  "<<  etas.at(j)<< std::endl;
-      std::cout<<"  dR "<< sqrt(pow(dphi,2) + pow(etas.at(i) - etas.at(j),2)) << std::endl;
-    }
-  }
-  */
-  //  if (nFound == numRequired_)  std::cout<<" numFound:  "<< nFound<< "  dR size   " << dR.size() <<std::endl;
-  //  if (nFound == numRequired_)  for(auto &l:dR){std::cout<<" dR  "<< l <<std::endl;}
-  
   if (nFound == numRequired_) {
-    
-    //    std::cout<<"sum: "<< sum.M() <<std::endl;
-    //    sum.Print();
     passedEvents_++;
     return true;
   } else {
