@@ -135,18 +135,21 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
   
   std::vector<bool> HLT_pass;//stores whether a particular combination of 3 muons would pass the HLT.
                              //Condition for track not applied. Inv Mass considered separately.
-  std::vector<bool> L1_pass;//if the 3 muons would pass L1. Doesn't take into account events with only 2 muons
+  std::vector<bool> HLT_restrictive_pass;// restrictive HLT. Checks for common vertex and invariant mass
+  std::vector<bool> L1_pass;//if the 3 muons would pass L1 Double mu condition. Doesn't take into account events with only 2 muons, so triple mu criteria always satisfied
   std::vector<bool> Charge_pass;//if total charge of muons is +/- 1
-  std::vector<bool> InvMass_pass;//Pass if invariant mass is between 1.60-2.02 GeV
+  std::vector<bool> InvMass_pass;//Pass if invariant mass is between 1.55-2.1 GeV
   std::vector<bool> CommonVertex_pass;//if all 3 muons have a common vertex (say upto level 10 or higher)
   std::vector<bool> CommonVertex_Low_pass;//if all 3 muons have a common vertex (say upto level 4 or lower)
   std::vector<bool> CommonVertex2Mu_Low_pass;//if at least two of the three muons have a common vertex (level 2 or lower)
   std::vector<bool> dR_pass;// Check if all three pairs of muons are within maxDr_ of each other
+  std::vector<bool> Global_ID_pass;// Check for pT and eta conditions of global ID
   
   if(pts.size()>=3){// reserve space for pass vectors so that the code runs faster
       int reserve_size=((pts.size()*(pts.size()-1)*(pts.size()-2))/6);
       
       HLT_pass.reserve(reserve_size);
+      HLT_restrictive_pass.reserve(reserve_size);
       L1_pass.reserve(reserve_size);
       Charge_pass.reserve(reserve_size);
       InvMass_pass.reserve(reserve_size);
@@ -154,6 +157,7 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
       CommonVertex_Low_pass.reserve(reserve_size);
       CommonVertex2Mu_Low_pass.reserve(reserve_size);
       dR_pass.reserve(reserve_size);
+      Global_ID_pass.reserve(reserve_size);
       
   }
   
@@ -172,6 +176,15 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                 if(A<B&&B<C){//All unique combinations of muons
                     
                     std::vector<unsigned int> mu_i = {A,B,C};
+                    std::vector<int> vec_BC_A = ancestor_vtx[A];// contains barcode of ancestor vertices of the muon including of prd. vertex
+                    std::vector<int> vec_BC_B = ancestor_vtx[B];
+                    std::vector<int> vec_BC_C = ancestor_vtx[C];
+                    
+                    // Look at their invariant mass
+                    TLorentzVector sum_3mu(p1.at(A)+p1.at(B)+p1.at(C),p2.at(A)+p2.at(B)+p2.at(C),p3.at(A)+p3.at(B)+p3.at(C),es.at(A)+es.at(B)+es.at(C));
+                    bool three_mu_inv = (sum_3mu.M()>1.55)&&(sum_3mu.M()<2.1);
+                    InvMass_pass.push_back(three_mu_inv);
+                    
                     
                     // Check the HLT pTs
                     bool HLT(false);
@@ -184,8 +197,16 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                     }
                     HLT_pass.push_back(HLT);
                     
+                    // Check the HLT pTs, common vertices and invariant mass; very restrictive
+                    bool HLT_restrict(false);
+                    int HLT_max_level(2); // Max number of ancestor vertices that are searched. 1=parent, 2=grand-parent, etc
+                    if(hascv2mu(vec_BC_A,vec_BC_B,HLT_max_level) && ishlt(pts.at(A),pts.at(B)) && pts.at(C) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    if(hascv2mu(vec_BC_A,vec_BC_C,HLT_max_level) && ishlt(pts.at(A),pts.at(C)) && pts.at(B) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    if(hascv2mu(vec_BC_B,vec_BC_C,HLT_max_level) && ishlt(pts.at(B),pts.at(C)) && pts.at(A) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    HLT_restrictive_pass.push_back(HLT_restrict);
                     
-                    // Check the L1 pT and etas
+                    
+                    // Check the L1 double mu pT and etas
                     bool L1T(false);
                     for (int i = 0; i < 3; i++){//sends 3 pairs of muons to the IsL1 class
                         // (b + (a%b)) % b is used to get a positive value for negative modulo
@@ -212,15 +233,7 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                     Charge_pass.push_back(abs(charges.at(A)+charges.at(B)+charges.at(C))==1);
                     
                     
-                    // Look at their invariant mass
-                    TLorentzVector sum_3mu(p1.at(A)+p1.at(B)+p1.at(C),p2.at(A)+p2.at(B)+p2.at(C),p3.at(A)+p3.at(B)+p3.at(C),es.at(A)+es.at(B)+es.at(C));
-                    InvMass_pass.push_back((sum_3mu.M()>1.5)&&(sum_3mu.M()<2.1));
-                    
-                    
                     // Check for common vertices (for 3 muons)
-                    std::vector<int> vec_BC_A = ancestor_vtx[A];// contains barcode of ancestor vertices of the muon including of prd. vertex
-                    std::vector<int> vec_BC_B = ancestor_vtx[B];
-                    std::vector<int> vec_BC_C = ancestor_vtx[C];
                     CommonVertex_pass.push_back(hascv3mu(vec_BC_A,vec_BC_B,vec_BC_C,10));// last argument is the maximum vertex level. 1 equals parent.
                     CommonVertex_Low_pass.push_back(hascv3mu(vec_BC_A,vec_BC_B,vec_BC_C,4));// lower max vertex level (upto great-great grandparent vertex)
                     
@@ -232,6 +245,10 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                     if(hascv2mu(vec_BC_A,vec_BC_C,max_level)) CV2mu=true;
                     if(hascv2mu(vec_BC_B,vec_BC_C,max_level)) CV2mu=true;
                     CommonVertex2Mu_Low_pass.push_back(CV2mu);
+                    
+                    // Check for Global Muon ID pT and eTa restrictions
+                    Global_ID_pass.push_back((pts.at(A)>1.9)&&(pts.at(B)>1.9)&&(pts.at(C)>1.9)&&(fabs(etas.at(A))<2.45)&&(fabs(etas.at(B))<2.45)&&(fabs(etas.at(C))<2.45));
+                    
                     
                     x+=1;
                     /*
@@ -248,14 +265,14 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
   }// end pts.size()>=3
   
   
-  bool Final_pass(false);
-  // Final_pass checks whether there's atleast one combination of 3 muons that pass all these conditions
-  // Poible checks: HLT_pass, L1_pass, Charge_pass, InvMass_pass, CommonVertex_pass, CommonVertex_Low_pass, CommonVertex2Mu_Low_pass, dR_pass
+  // Possible checks: HLT_pass, L1_pass, Charge_pass, InvMass_pass, CommonVertex_pass, CommonVertex_Low_pass, CommonVertex2Mu_Low_pass, dR_pass, Global_ID_pass, 
+  // Final pass online checks whether the event passes the trigger (mainly just HLT)
+  // Final_pass_offline checks whether there's atleast one combination of 3 muons that pass offline conditions
+  bool Final_pass_online(false);
+  bool Final_pass_offline(false);
   for (unsigned int comb_idx = 0; comb_idx < Charge_pass.size(); comb_idx++) {//comb_idx indexes all unique combinations of muons
-      if(HLT_pass.at(comb_idx)&&L1_pass.at(comb_idx)&&Charge_pass.at(comb_idx)&&InvMass_pass.at(comb_idx)&&CommonVertex_Low_pass.at(comb_idx)){
-          Final_pass=true;
-          break;
-      }
+      if(HLT_restrictive_pass.at(comb_idx)) Final_pass_online=true;
+      if(Charge_pass.at(comb_idx)&&Global_ID_pass.at(comb_idx)&&dR_pass.at(comb_idx)&&InvMass_pass.at(comb_idx)) Final_pass_offline=true;
   }
   
   HLT_pass.clear();
@@ -266,12 +283,14 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
   CommonVertex_Low_pass.clear();
   CommonVertex2Mu_Low_pass.clear();
   dR_pass.clear();
+  Global_ID_pass.clear();
+  HLT_restrictive_pass.clear();
   
-  if (Final_pass){
+  if (Final_pass_online&&Final_pass_offline){
     std::cout<<"Three muons found at event no. "<<totalEvents_<<" satisfying all conditions."<<std::endl;
   }
   
-  if (Final_pass) {
+  if (Final_pass_online&&Final_pass_offline) {
     
     passedEvents_++;
     return true;

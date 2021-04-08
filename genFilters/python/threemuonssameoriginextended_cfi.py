@@ -8,7 +8,7 @@ threemufilter = cms.EDFilter("ThreeMuonsSameOriginExtended",
                                                 Status          = cms.vint32(1,1,1),
                                                 invMassMin      = cms.double(0),
                                                 invMassMax      = cms.double(1000),
-                                                maxDr           = cms.double(1.2)
+                                                maxDr           = cms.double(1.0)
                                             )
 
 
