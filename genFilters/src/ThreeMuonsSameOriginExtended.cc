@@ -85,20 +85,33 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
   std::vector<int> muon_BC; //list of barcodes of the muons
   std::vector<std::vector<int>> ancestor_vtx;// 2D vector of barcodes of all ancestor vertices of each muon
   
+  std::vector<float> parent_vtx_x; // space-time positions of parent vertex
+  std::vector<float> parent_vtx_y;
+  std::vector<float> parent_vtx_z;
+  std::vector<float> parent_vtx_t;
+
+  std::vector<float> gparent_vtx_x; // space-time positions of grandparent vertex
+  std::vector<float> gparent_vtx_y;
+  std::vector<float> gparent_vtx_z;
+  std::vector<float> gparent_vtx_t;
+  
   //std::vector<std::unique_ptr<HepMC::GenVertex>> parent_vtx_reference;// stores references to the production vertex of muon. Memory leak?
 
   //std::cout<<"Test Print out at event number "<<  totalEvents_  <<std::endl;
   
 
-  for ( HepMC::GenEvent::particle_const_iterator p = myGenEvent->particles_begin(); // loop over particles
+  for ( HepMC::GenEvent::particle_const_iterator p = myGenEvent->particles_begin(); // loop over particles in an event
 	p != myGenEvent->particles_end(); ++p ) {
         
-     if(abs((*p)->pdg_id())==13 && ((*p)->status()==1)){// Used to collect all the muons (with decay status 1 / not decayed)
+     if((abs((*p)->pdg_id())==particleID_[0] && ((*p)->status()==status_[0]))
+     ||(abs((*p)->pdg_id())==particleID_[1] && ((*p)->status()==status_[1]))
+     ||(abs((*p)->pdg_id())==particleID_[2] && ((*p)->status()==status_[2]))
+     ){// Used to collect all the muons (with decay status 1 / not decayed)
      
         pts.push_back((*p)->momentum().perp());
         etas.push_back((*p)->momentum().eta());
         phis.push_back((*p)->momentum().phi());
-        charges.push_back(-1*((*p)->pdg_id()/13));
+        charges.push_back(-1*((*p)->pdg_id()/particleID_[0]));//what if it's not 0th particle ID?
         
         muon_BC.push_back((*p)->barcode());
         
@@ -109,9 +122,24 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
         p2.push_back((*p)->momentum().py());
         p3.push_back((*p)->momentum().pz());
         
+        int count(0);// helps with storing vertex position
         std::vector<int> vec_BC;// contains barcode of ancestor vertices of the muon including of prd. vertex
         for (HepMC::GenVertex::vertex_iterator anc=(*p)->production_vertex()->vertices_begin(HepMC::ancestors);anc !=(*p)->production_vertex()->vertices_end(HepMC::ancestors);++anc ){
             vec_BC.push_back((*anc)->barcode());
+            
+            if(count==0){// stores parent vertex positions
+                parent_vtx_x.push_back((*anc)->position().x());
+                parent_vtx_y.push_back((*anc)->position().y());
+                parent_vtx_z.push_back((*anc)->position().z());
+                parent_vtx_t.push_back((*anc)->position().t());
+            }
+            if(count==1){// stores grandparent vertex positions
+                gparent_vtx_x.push_back((*anc)->position().x());
+                gparent_vtx_y.push_back((*anc)->position().y());
+                gparent_vtx_z.push_back((*anc)->position().z());
+                gparent_vtx_t.push_back((*anc)->position().t());
+            }
+            count+=1;
         }
         std::reverse(vec_BC.begin(),vec_BC.end());// Reverse the vector so that the closest vertex to the muon is at the beginning of the vector
         ancestor_vtx.push_back(vec_BC);
@@ -169,7 +197,7 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
   
   //This step looks at all unique combinations of muons and checks if they pass certain conditions
   
-  if(pts.size()>=3&&pts.size()<=125){// need atleast 3 muons. The number of muons shouldn't be too big, it might crash? I've run with sizes of 120. It should be good as long as you don't print anything inside these loops.
+  if(pts.size()>=3&&pts.size()<=150){// need atleast 3 muons. The number of muons shouldn't be too big, it might crash? I've run with sizes of 120. It should be good as long as you don't print anything inside these loops.
     for (unsigned int A = 0; A < pts.size(); A++) {//all possible combinations of muons (indexed by A, B and C)
         for (unsigned int B = 0; B < pts.size(); B++) {
             for (unsigned int C = 0; C < pts.size(); C++) {
@@ -182,7 +210,7 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                     
                     // Look at their invariant mass
                     TLorentzVector sum_3mu(p1.at(A)+p1.at(B)+p1.at(C),p2.at(A)+p2.at(B)+p2.at(C),p3.at(A)+p3.at(B)+p3.at(C),es.at(A)+es.at(B)+es.at(C));
-                    bool three_mu_inv = (sum_3mu.M()>1.55)&&(sum_3mu.M()<2.1);
+                    bool three_mu_inv = (sum_3mu.M()>invMassMin_)&&(sum_3mu.M()<invMassMax_);
                     InvMass_pass.push_back(three_mu_inv);
                     
                     
@@ -190,19 +218,39 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                     bool HLT(false);
                     for (int i = 0; i < 3; i++){//sends 3 pairs of muons to the IsHLT class
                         // (b + (a%b)) % b is used to get a positive value for negative modulo
-                        if(ishlt(pts.at(mu_i.at((3 + ((i-1)%3)) % 3)),pts.at(mu_i.at((3 + ((i+1)%3)) % 3)))){
+                        if(ishlt(pts.at(mu_i.at((3 + ((i-1)%3)) % 3)),pts.at(mu_i.at((3 + ((i+1)%3)) % 3)),ptMin_[0],ptMin_[1])){
                             HLT=true;
                             break;
                         }
                     }
                     HLT_pass.push_back(HLT);
                     
+                    // Check for common vertices (for 2 of the three muons)
+                    bool CV2mu(false);
+                    unsigned int max_level(2); // Max number of ancestor vertices that are searched. 1=parent, 2=grand-parent, etc
+                    if(hascv2mu(vec_BC_A,vec_BC_B,max_level)) CV2mu=true;
+                    if(hascv2mu(vec_BC_A,vec_BC_C,max_level)) CV2mu=true;
+                    if(hascv2mu(vec_BC_B,vec_BC_C,max_level)) CV2mu=true;
+                    CommonVertex2Mu_Low_pass.push_back(CV2mu);
+                    
+                    
                     // Check the HLT pTs, common vertices and invariant mass; very restrictive
                     bool HLT_restrict(false);
-                    int HLT_max_level(2); // Max number of ancestor vertices that are searched. 1=parent, 2=grand-parent, etc
-                    if(hascv2mu(vec_BC_A,vec_BC_B,HLT_max_level) && ishlt(pts.at(A),pts.at(B)) && pts.at(C) > 1.1 && three_mu_inv) HLT_restrict=true;
-                    if(hascv2mu(vec_BC_A,vec_BC_C,HLT_max_level) && ishlt(pts.at(A),pts.at(C)) && pts.at(B) > 1.1 && three_mu_inv) HLT_restrict=true;
-                    if(hascv2mu(vec_BC_B,vec_BC_C,HLT_max_level) && ishlt(pts.at(B),pts.at(C)) && pts.at(A) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    /*
+                    int HLT_max_level(5); // Max number of ancestor vertices that are searched. 1=parent, 2=grand-parent, etc
+                    if(hascv2mu(vec_BC_A,vec_BC_B,HLT_max_level) && ishlt(pts.at(A),pts.at(B),ptMin_[0],ptMin_[1]) && pts.at(C) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    if(hascv2mu(vec_BC_A,vec_BC_C,HLT_max_level) && ishlt(pts.at(A),pts.at(C),ptMin_[0],ptMin_[1]) && pts.at(B) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    if(hascv2mu(vec_BC_B,vec_BC_C,HLT_max_level) && ishlt(pts.at(B),pts.at(C),ptMin_[0],ptMin_[1]) && pts.at(A) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    */
+                    bool CV2muHLT(false);
+                    unsigned int HLT_max_level(10); // Max number of ancestor vertices that are searched. 1=parent, 2=grand-parent, etc
+                    if(hascv2mu(vec_BC_A,vec_BC_B,HLT_max_level)) CV2muHLT=true;
+                    if(hascv2mu(vec_BC_A,vec_BC_C,HLT_max_level)) CV2muHLT=true;
+                    if(hascv2mu(vec_BC_B,vec_BC_C,HLT_max_level)) CV2muHLT=true;
+                    
+                    if(CV2muHLT && ishlt(pts.at(A),pts.at(B),ptMin_[0],ptMin_[1]) && pts.at(C) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    if(CV2muHLT && ishlt(pts.at(A),pts.at(C),ptMin_[0],ptMin_[1]) && pts.at(B) > 1.1 && three_mu_inv) HLT_restrict=true;
+                    if(CV2muHLT && ishlt(pts.at(B),pts.at(C),ptMin_[0],ptMin_[1]) && pts.at(A) > 1.1 && three_mu_inv) HLT_restrict=true;
                     HLT_restrictive_pass.push_back(HLT_restrict);
                     
                     
@@ -234,20 +282,19 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                     
                     
                     // Check for common vertices (for 3 muons)
-                    CommonVertex_pass.push_back(hascv3mu(vec_BC_A,vec_BC_B,vec_BC_C,10));// last argument is the maximum vertex level. 1 equals parent.
-                    CommonVertex_Low_pass.push_back(hascv3mu(vec_BC_A,vec_BC_B,vec_BC_C,4));// lower max vertex level (upto great-great grandparent vertex)
+                    CommonVertex_pass.push_back(hascv3mu(vec_BC_A,vec_BC_B,vec_BC_C,4));// last argument is the maximum vertex level. 1 equals parent.
+                    CommonVertex_Low_pass.push_back(hascv3mu(vec_BC_A,vec_BC_B,vec_BC_C,2));// lower max vertex level (upto great-great grandparent vertex)
                     
-                    
-                    // Check for common vertices (for 2 of the three muons)
-                    bool CV2mu(false);
-                    unsigned int max_level(1); // Max number of ancestor vertices that are searched. 1=parent, 2=grand-parent, etc
-                    if(hascv2mu(vec_BC_A,vec_BC_B,max_level)) CV2mu=true;
-                    if(hascv2mu(vec_BC_A,vec_BC_C,max_level)) CV2mu=true;
-                    if(hascv2mu(vec_BC_B,vec_BC_C,max_level)) CV2mu=true;
-                    CommonVertex2Mu_Low_pass.push_back(CV2mu);
                     
                     // Check for Global Muon ID pT and eTa restrictions
-                    Global_ID_pass.push_back((pts.at(A)>1.9)&&(pts.at(B)>1.9)&&(pts.at(C)>1.9)&&(fabs(etas.at(A))<2.45)&&(fabs(etas.at(B))<2.45)&&(fabs(etas.at(C))<2.45));
+                    Global_ID_pass.push_back((pts.at(A)>ptMin_[2])&&(pts.at(B)>ptMin_[2])&&(pts.at(C)>ptMin_[2])&&(fabs(etas.at(A))<etaMax_[0])&&(fabs(etas.at(B))<etaMax_[1])&&(fabs(etas.at(C))<etaMax_[2]));
+                    
+                    // Check for Vertex position
+                    /*
+                    if(hascv2mu(vec_BC_A,vec_BC_B,1)){
+                        std::cout<<"A and B have common vertex with dz: "<<parent_vtx_z.at(A)-gparent_vtx_z.at(A)<<std::endl;
+                    }
+                    */
                     
                     
                     x+=1;
@@ -258,21 +305,21 @@ bool ThreeMuonsSameOriginExtended::filter(edm::Event& iEvent, const edm::EventSe
                     }
                     */
                     
-                }// end unique muon loop
+                }// end unique muon if statement
             }// C loop
         }// B loop
     }// A loop
   }// end pts.size()>=3
   
   
-  // Possible checks: HLT_pass, L1_pass, Charge_pass, InvMass_pass, CommonVertex_pass, CommonVertex_Low_pass, CommonVertex2Mu_Low_pass, dR_pass, Global_ID_pass, 
+  // Possible checks: HLT_pass, HLT_restrictive_pass, L1_pass, Charge_pass, InvMass_pass, CommonVertex_pass, CommonVertex_Low_pass, CommonVertex2Mu_Low_pass, dR_pass, Global_ID_pass, 
   // Final pass online checks whether the event passes the trigger (mainly just HLT)
   // Final_pass_offline checks whether there's atleast one combination of 3 muons that pass offline conditions
   bool Final_pass_online(false);
   bool Final_pass_offline(false);
   for (unsigned int comb_idx = 0; comb_idx < Charge_pass.size(); comb_idx++) {//comb_idx indexes all unique combinations of muons
       if(HLT_restrictive_pass.at(comb_idx)) Final_pass_online=true;
-      if(Charge_pass.at(comb_idx)&&Global_ID_pass.at(comb_idx)&&dR_pass.at(comb_idx)&&InvMass_pass.at(comb_idx)) Final_pass_offline=true;
+      if(Charge_pass.at(comb_idx)&&Global_ID_pass.at(comb_idx)&&dR_pass.at(comb_idx)&&InvMass_pass.at(comb_idx)&&CommonVertex2Mu_Low_pass.at(comb_idx)) Final_pass_offline=true;
   }
   
   HLT_pass.clear();

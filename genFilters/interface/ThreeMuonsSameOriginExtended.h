@@ -66,8 +66,8 @@ namespace edm {
   class IsHLT {
   public:
       // returns true if HLT trigger satisfied
-      bool operator()(float pt1, float pt2) { 
-      if ( pt1>2.9&&pt2>2.9) return 1;
+      bool operator()(float pt1, float pt2, float maxhlt1, float maxhlt2) { 
+      if ( pt1>maxhlt1&&pt2>maxhlt2) return 1;
       return 0;
       }
   };
