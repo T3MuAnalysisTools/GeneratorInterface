@@ -637,18 +637,12 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
     fJetMatchingHook->resetMatchingStatus();
     fJetMatchingHook->beforeHadronization(lheEvent());
   }
-  //  std::cout<<"  check     "<< fMasterGen->next()  << std::endl;
-  bool redoBDecays = true;
-  bool redoHadrons = false;
 
+
+  //------------------------- redecay B/D's 
   int nRepeat = 10;
-  if (!redoBDecays && !redoHadrons) nRepeat = 1;
+   
 
-  if (redoHadrons) redoBDecays = false;
-  
-
-
-  //  Event& event = fMasterGen->event;
 
   int bCodes[16] = {511, 521, 513, 523, 531, 533,  541, 5122,
 		   411, 421, 413, 423, 431, 433,  415, 10411 };
@@ -656,99 +650,61 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
 
 
 
-  //  int bCodes[] = {521};
-  //size_t nCodes = sizeof(bCodes)/sizeof(bCodes[0]);
-
-  //for (int iC = 0; iC < nCodes; ++iC)
-  // pythia.particleData.mayDecay( bCodes[iC], false);
-  //  MasterGen->next()->mayDeacay(bCodes[iC], false)
-  for (int iC = 0; iC < nCodes; ++iC)
-    fMasterGen->particleData.mayDecay( bCodes[iC], false);
+  for (int iC = 0; iC < nCodes; ++iC)   fMasterGen->particleData.mayDecay( bCodes[iC], false);
 
 
   if (!fMasterGen->next())
     return false;
- 
+
 
 
   vector<int> iBHad;
   int nBHad = 0;
-  int nBHad_iter = 0;
+
   Event *pythiaEvent = &(fMasterGen->event);
-  Event *savedEvent;
+  //  Event *savedEvent;
   int nBquark = 0;
   int stat;
+
+
   for (int i = 0; i < pythiaEvent->size(); ++i) {
     stat = abs(pythiaEvent->at(i).status());
     if ( abs(pythiaEvent->at(i).id()) == 5 && (stat == 62 || stat == 63)) ++nBquark;
   }
 
- if (redoBDecays) {
-   iBHad.resize(0);
-   for (int i = 0; i < pythiaEvent->size(); ++i) {
-     int idAbs = abs(pythiaEvent->at(i).id());
-     for (int iC = 0; iC < nCodes; ++iC)
-       if (idAbs == bCodes[iC]) {
-	 iBHad.push_back(i);
-	 break;
-       }
-   }
-   
-   nBHad = iBHad.size();
+
+  iBHad.resize(0);
+  for (int i = 0; i < pythiaEvent->size(); ++i) {
+    int idAbs = abs(pythiaEvent->at(i).id());
+    for (int iC = 0; iC < nCodes; ++iC)
+      if (idAbs == bCodes[iC]) {
+	iBHad.push_back(i);
+	break;
+      }
+  }
+  
+  nBHad = iBHad.size();
    // if (nBquark != nBHad) cout << " Warning: " << nBquark
    // 			     << " b quarks but " << nBHad << " B hadrons" << endl;
    
 
-   //  for(int iB = 0; iB < nBHad; iB++){
-   //    std::cout<<"id  "<< pythiaEvent->at(iBHad.at(iB)).id() << " pT  "<< pythiaEvent->at(iBHad.at(iB)).e() << std::endl;
-   //  }
-
-   pythiaEvent->saveSize();
-   for (int iC = 0; iC < nCodes; ++iC)
-     fMasterGen->particleData.mayDecay( bCodes[iC], true);
+  pythiaEvent->saveSize();
+  for (int iC = 0; iC < nCodes; ++iC)     fMasterGen->particleData.mayDecay( bCodes[iC], true);
 
 
- } else if (redoHadrons) {
-   savedEvent = pythiaEvent;
- }
- 
+
  int nIterations(0);
- float PairMass(0.);
+ float TripleMass(0.);
  for (int iRepeat = 0; iRepeat < nRepeat; ++iRepeat) {
 
-  if (redoBDecays) {
-        if (iRepeat > 0) {
-          pythiaEvent->restoreSize();
-
-          // Repeated decays: mark decayed B hadrons as undecayed.
-          for (int iB = 0; iB < nBHad; ++iB) pythiaEvent->at(iBHad.at(iB)).statusPos();
-        }
-
-	if (!fMasterGen->moreDecays()) continue;
-
-
-
-
-
-
-
-
-	// nBHad_iter = iBHad_iter.size();
-	// for(int iB = 0; iB < nBHad_iter; iB++){
-	//   std::cout<< "iteration  " << iRepeat<<" id  "<< pythiaEvent_iter->at(iBHad_iter.at(iB)).id() << " e  "<< pythiaEvent->at(iBHad_iter.at(iB)).e() << std::endl;
-
-	//   std::cout<< "----- daughter 1   id  "<< pythiaEvent_iter->at(pythiaEvent->at(iBHad_iter.at(iB)).daughter1()).id() << " e  "<< pythiaEvent->at(pythiaEvent->at(iBHad_iter.at(iB)).daughter1()).e() << std::endl;
-	//   std::cout<< "----- daughter 2   id  "<< pythiaEvent_iter->at(pythiaEvent->at(iBHad_iter.at(iB)).daughter2()).id() << " e  "<< pythiaEvent->at(pythiaEvent->at(iBHad_iter.at(iB)).daughter2()).e() << std::endl;
-
-
-
-
-	// }
-
-
-
-
-
+   if (iRepeat > 0) {
+     pythiaEvent->restoreSize();
+     // Repeated decays: mark decayed B hadrons as undecayed.
+     for (int iB = 0; iB < nBHad; ++iB) pythiaEvent->at(iBHad.at(iB)).statusPos();
+   }
+  
+   if (!fMasterGen->moreDecays()) continue;
+  
   
    vector<int> Muons;
    for (int i = 0; i < pythiaEvent->size(); ++i) {
@@ -762,61 +718,31 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
      }
    }
 
-   //   std::cout<<"  Number of Muons  "<< Muons.size() << std::endl;
+
    if(Muons.size() == 3){
-      if( abs(pythiaEvent->at(Muons.at(0)).charge() + pythiaEvent->at(Muons.at(1)).charge() +   pythiaEvent->at(Muons.at(2)).charge()) == 1  )
-       {
-
-       //  std::cout<<"   mass   "<< ( pythiaEvent->at(Muons.at(0)).p() + pythiaEvent->at(Muons.at(1)).p() ).mCalc() << std::endl;
-       PairMass = ( pythiaEvent->at(Muons.at(0)).p() + pythiaEvent->at(Muons.at(1)).p() /*+ pythiaEvent->at(Muons.at(2)).p()*/ ).mCalc();
-     }
+     if( abs(pythiaEvent->at(Muons.at(0)).charge() + pythiaEvent->at(Muons.at(1)).charge() +   pythiaEvent->at(Muons.at(2)).charge()) == 1  )
+       TripleMass = ( pythiaEvent->at(Muons.at(0)).p() + pythiaEvent->at(Muons.at(1)).p() + pythiaEvent->at(Muons.at(2)).p() ).mCalc();
    }
-  
-   if(PairMass > 1 && PairMass < 2) {
+
+   if(TripleMass > 1 && TripleMass < 2) {
      nIterations = iRepeat;
      break;
    }
-
-  }
-  else if (redoHadrons) {
-        if (iRepeat > 0) pythiaEvent = savedEvent;
-        if (!fMasterGen->forceHadronLevel(false)) continue;
-   vector<int> Muons;
-   for (int i = 0; i < pythiaEvent->size(); ++i) {
-     int idAbs = abs(pythiaEvent->at(i).id());
-     if(idAbs == 13){
-       if(pythiaEvent->at(i).pT() > 3){
-	 if(abs(pythiaEvent->at(i).y())< 2.5){
-	   Muons.push_back(i);
-	 }
-       }
-     }
-   }
-
-   //   std::cout<<"  Number of Muons  "<< Muons.size() << std::endl;
-   if(Muons.size() == 2){
-      if( abs(pythiaEvent->at(Muons.at(0)).charge() + pythiaEvent->at(Muons.at(1)).charge() /*+   pythiaEvent->at(Muons.at(2)).charge()*/) == 0  )
-       {
-
-       //  std::cout<<"   mass   "<< ( pythiaEvent->at(Muons.at(0)).p() + pythiaEvent->at(Muons.at(1)).p() ).mCalc() << std::endl;
-       PairMass = ( pythiaEvent->at(Muons.at(0)).p() + pythiaEvent->at(Muons.at(1)).p() /*+ pythiaEvent->at(Muons.at(2)).p()*/ ).mCalc();
-     }
-   }
-  
-   if(PairMass > 0.2) {
-     nIterations = iRepeat;
-     break;
-   }
-  }
-
 
  }
+  
+
+
  // pythiaEvent->print();
 
 
  if(nIterations!=0)
- std::cout<<"  Mass  "<< PairMass <<"  iterations   "<< nIterations << std::endl;
+ std::cout<<"  Mass  "<< TripleMass <<"  iterations   "<< nIterations << std::endl;
 
+
+
+
+//------------------------- redecay B/D's 
 
   double mergeweight = fMasterGen.get()->info.mergingWeightNLO();
   if (fMergingHook.get()) {
@@ -845,6 +771,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
     evtgenDecays->decay();
 
   event().reset(new HepMC::GenEvent);
+
   bool py8hepmc = toHepMC.fill_next_event(*(fMasterGen.get()), event().get());
 
   if (!py8hepmc) {
