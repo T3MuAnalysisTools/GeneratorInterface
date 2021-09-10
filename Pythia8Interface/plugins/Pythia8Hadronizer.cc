@@ -640,7 +640,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
 
 
   //------------------------- redecay B/D's 
-  int nRepeat = 10;
+  int nRepeat = 10000;
    
 
 
