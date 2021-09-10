@@ -738,7 +738,6 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
 
   //  return false if gluon with status > 0
   for (int i = 0; i < pythiaEvent->size(); ++i) {
-    stat = abs(pythiaEvent->at(i).status());
     if ( abs(pythiaEvent->at(i).id()) == 21 && pythiaEvent->at(i).status() > 0 ) return false;
   }
 
