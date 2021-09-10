@@ -644,13 +644,13 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
    
 
 
-  int bCodes[16] = {511, 521, 513, 523, 531, 533,  541, 5122,
+  int pCodes[16] = {511, 521, 513, 523, 531, 533,  541, 5122,
 		   411, 421, 413, 423, 431, 433,  415, 10411 };
   int nCodes = 16;
 
 
 
-  for (int iC = 0; iC < nCodes; ++iC)   fMasterGen->particleData.mayDecay( bCodes[iC], false);
+  for (int iC = 0; iC < nCodes; ++iC)   fMasterGen->particleData.mayDecay( pCodes[iC], false);
 
 
   if (!fMasterGen->next())
@@ -666,6 +666,8 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
   int nBquark = 0;
   int stat;
 
+ 
+
 
   for (int i = 0; i < pythiaEvent->size(); ++i) {
     stat = abs(pythiaEvent->at(i).status());
@@ -677,7 +679,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
   for (int i = 0; i < pythiaEvent->size(); ++i) {
     int idAbs = abs(pythiaEvent->at(i).id());
     for (int iC = 0; iC < nCodes; ++iC)
-      if (idAbs == bCodes[iC]) {
+      if (idAbs == pCodes[iC]) {
 	iBHad.push_back(i);
 	break;
       }
@@ -689,7 +691,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
    
 
   pythiaEvent->saveSize();
-  for (int iC = 0; iC < nCodes; ++iC)     fMasterGen->particleData.mayDecay( bCodes[iC], true);
+  for (int iC = 0; iC < nCodes; ++iC)     fMasterGen->particleData.mayDecay( pCodes[iC], true);
 
 
 
@@ -706,6 +708,8 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
    if (!fMasterGen->moreDecays()) continue;
   
   
+   // -------- just some test filter
+
    vector<int> Muons;
    for (int i = 0; i < pythiaEvent->size(); ++i) {
      int idAbs = abs(pythiaEvent->at(i).id());
@@ -718,7 +722,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
      }
    }
 
-
+  
    if(Muons.size() == 3){
      if( abs(pythiaEvent->at(Muons.at(0)).charge() + pythiaEvent->at(Muons.at(1)).charge() +   pythiaEvent->at(Muons.at(2)).charge()) == 1  )
        TripleMass = ( pythiaEvent->at(Muons.at(0)).p() + pythiaEvent->at(Muons.at(1)).p() + pythiaEvent->at(Muons.at(2)).p() ).mCalc();
@@ -732,13 +736,21 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize() {
  }
   
 
+  //  return false if gluon with status > 0
+  for (int i = 0; i < pythiaEvent->size(); ++i) {
+    stat = abs(pythiaEvent->at(i).status());
+    if ( abs(pythiaEvent->at(i).id()) == 21 && pythiaEvent->at(i).status() > 0 ) return false;
+  }
 
- // pythiaEvent->print();
+
+	
 
 
- if(nIterations!=0)
- std::cout<<"  Mass  "<< TripleMass <<"  iterations   "<< nIterations << std::endl;
-
+  //   check print out
+ if(nIterations!=0){
+   std::cout<<"  Mass  "<< TripleMass <<"  iterations   "<< nIterations << std::endl;
+   //   fMasterGen->event.list();
+ }
 
 
 
