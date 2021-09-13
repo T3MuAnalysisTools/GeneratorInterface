@@ -6,115 +6,133 @@
 
 namespace gen {
 
-  class Py8JetGun : public Py8GunBase {
-  public:
-    Py8JetGun(edm::ParameterSet const&);
-    ~Py8JetGun() override {}
+class Py8JetGun : public Py8GunBase {
+   
+   public:
+      
+      Py8JetGun( edm::ParameterSet const& );
+      ~Py8JetGun() override {}
+	 
+      bool generatePartonsAndHadronize() override;
+      const char* classname() const override;
+	 
+   private:
+      
+      // PtGun particle(s) characteristics
+      double  fMinEta;
+      double  fMaxEta;
+      double  fMinP ;
+      double  fMaxP ;
+      double  fMinE ;
+      double  fMaxE ;
 
-    bool generatePartonsAndHadronize() override;
-    const char* classname() const override;
+};
 
-  private:
-    // PtGun particle(s) characteristics
-    double fMinEta;
-    double fMaxEta;
-    double fMinP;
-    double fMaxP;
-    double fMinE;
-    double fMaxE;
-  };
+// implementation 
+//
+Py8JetGun::Py8JetGun( edm::ParameterSet const& ps )
+   : Py8GunBase(ps) 
+{
 
-  // implementation
-  //
-  Py8JetGun::Py8JetGun(edm::ParameterSet const& ps) : Py8GunBase(ps) {
-    // ParameterSet defpset ;
-    edm::ParameterSet pgun_params = ps.getParameter<edm::ParameterSet>("PGunParameters");  // , defpset ) ;
-    fMinEta = pgun_params.getParameter<double>("MinEta");                                  // ,-2.2);
-    fMaxEta = pgun_params.getParameter<double>("MaxEta");                                  // , 2.2);
-    fMinP = pgun_params.getParameter<double>("MinP");                                      // ,  0.);
-    fMaxP = pgun_params.getParameter<double>("MaxP");                                      // ,  0.);
-    fMinE = pgun_params.getParameter<double>("MinE");                                      // ,  0.);
-    fMaxE = pgun_params.getParameter<double>("MaxE");                                      // ,  0.);
-  }
+   // ParameterSet defpset ;
+   edm::ParameterSet pgun_params = 
+      ps.getParameter<edm::ParameterSet>("PGunParameters"); // , defpset ) ;
+   fMinEta     = pgun_params.getParameter<double>("MinEta"); // ,-2.2);
+   fMaxEta     = pgun_params.getParameter<double>("MaxEta"); // , 2.2);
+   fMinP       = pgun_params.getParameter<double>("MinP"); // ,  0.);
+   fMaxP       = pgun_params.getParameter<double>("MaxP"); // ,  0.);
+   fMinE       = pgun_params.getParameter<double>("MinE"); // ,  0.);
+   fMaxE       = pgun_params.getParameter<double>("MaxE"); // ,  0.);
 
-  bool Py8JetGun::generatePartonsAndHadronize() {
-    fMasterGen->event.reset();
+}
 
-    double totPx = 0.;
-    double totPy = 0.;
-    double totPz = 0.;
-    double totE = 0.;
-    double totM = 0.;
-    double phi, eta, the, ee, pp;
+bool Py8JetGun::generatePartonsAndHadronize()
+{
 
-    for (size_t i = 0; i < fPartIDs.size(); i++) {
-      int particleID = fPartIDs[i];  // this is PDG - need to convert to Py8 ???
+   fMasterGen->event.reset();
 
-      phi = 2. * M_PI * randomEngine().flat();
-      the = acos(-1. + 2. * randomEngine().flat());
+   double totPx = 0.;
+   double totPy = 0.;
+   double totPz = 0.;
+   double totE  = 0.;
+   double totM  = 0.;
+   double phi, eta, the, ee, pp;
+   
+   for ( size_t i=0; i<fPartIDs.size(); i++ )
+   {
+
+      int particleID = fPartIDs[i]; // this is PDG - need to convert to Py8 ???
+
+      phi = 2. * M_PI * randomEngine().flat() ;
+      the = acos( -1. + 2.*randomEngine().flat() );
 
       // from input
       //
-      ee = (fMaxE - fMinE) * randomEngine().flat() + fMinE;
+      ee   = (fMaxE-fMinE)*randomEngine().flat() + fMinE;
+            
+      double mass = (fMasterGen->particleData).m0( particleID );
 
-      double mass = (fMasterGen->particleData).m0(particleID);
-
-      pp = sqrt(ee * ee - mass * mass);
-
+      pp = sqrt( ee*ee - mass*mass );
+      
       double px = pp * sin(the) * cos(phi);
       double py = pp * sin(the) * sin(phi);
       double pz = pp * cos(the);
 
-      if (!((fMasterGen->particleData).isParticle(particleID))) {
-        particleID = std::fabs(particleID);
+      if ( !((fMasterGen->particleData).isParticle( particleID )) )
+      {
+         particleID = std::fabs(particleID) ;
       }
-      (fMasterGen->event).append(particleID, 1, 0, 0, px, py, pz, ee, mass);
-      int eventSize = (fMasterGen->event).size() - 1;
+      (fMasterGen->event).append( particleID, 1, 0, 0, px, py, pz, ee, mass ); 
+      int eventSize = (fMasterGen->event).size()-1;
       // -log(flat) = exponential distribution
       double tauTmp = -(fMasterGen->event)[eventSize].tau0() * log(randomEngine().flat());
-      (fMasterGen->event)[eventSize].tau(tauTmp);
-
+      (fMasterGen->event)[eventSize].tau( tauTmp );
+      
       // values for computing total mass
       //
       totPx += px;
       totPy += py;
       totPz += pz;
-      totE += ee;
-    }
+      totE  += ee;
 
-    totM = sqrt(totE * totE - (totPx * totPx + totPy * totPy + totPz * totPz));
+   }
 
-    //now the boost (from input params)
-    //
-    pp = (fMaxP - fMinP) * randomEngine().flat() + fMinP;
-    ee = sqrt(totM * totM + pp * pp);
+   totM = sqrt( totE*totE - (totPx*totPx+totPy*totPy+totPz*totPz) );
 
-    //the boost direction (from input params)
-    //
-    phi = (fMaxPhi - fMinPhi) * randomEngine().flat() + fMinPhi;
-    eta = (fMaxEta - fMinEta) * randomEngine().flat() + fMinEta;
-    the = 2. * atan(exp(-eta));
+   //now the boost (from input params)
+   //
+   pp = (fMaxP-fMinP)*randomEngine().flat() + fMinP;
+   ee = sqrt( totM*totM + pp*pp );	 
 
-    double betaX = pp / ee * std::sin(the) * std::cos(phi);
-    double betaY = pp / ee * std::sin(the) * std::sin(phi);
-    double betaZ = pp / ee * std::cos(the);
+   //the boost direction (from input params)
+   //
+   phi = (fMaxPhi-fMinPhi)*randomEngine().flat() + fMinPhi;
+   eta  = (fMaxEta-fMinEta)*randomEngine().flat() + fMinEta;
+   the  = 2.*atan(exp(-eta));
 
-    // boost all particles
-    //
-    (fMasterGen->event).bst(betaX, betaY, betaZ);
+   double betaX = pp/ee * std::sin(the) * std::cos(phi);
+   double betaY = pp/ee * std::sin(the) * std::sin(phi);
+   double betaZ = pp/ee * std::cos(the);  
 
-    if (!fMasterGen->next())
-      return false;
+   // boost all particles
+   //   
+   (fMasterGen->event).bst( betaX, betaY, betaZ );
+   
+   if ( !fMasterGen->next() ) return false;
+   
+   event().reset(new HepMC::GenEvent);
+   return toHepMC.fill_next_event( fMasterGen->event, event().get() );
+  
+}
 
-    event().reset(new HepMC::GenEvent);
-    return toHepMC.fill_next_event(fMasterGen->event, event().get());
-  }
+const char* Py8JetGun::classname() const
+{
+   return "Py8JetGun"; 
+}
 
-  const char* Py8JetGun::classname() const { return "Py8JetGun"; }
+typedef edm::GeneratorFilter<gen::Py8JetGun, gen::ExternalDecayDriver> Pythia8JetGun;
 
-  typedef edm::GeneratorFilter<gen::Py8JetGun, gen::ExternalDecayDriver> Pythia8JetGun;
-
-}  // namespace gen
+} // end namespace
 
 using gen::Pythia8JetGun;
 DEFINE_FWK_MODULE(Pythia8JetGun);

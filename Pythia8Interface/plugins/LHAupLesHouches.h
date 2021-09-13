@@ -6,6 +6,8 @@
 #include <memory>
 #include <cassert>
 
+#include "boost/shared_ptr.hpp"
+
 #include "HepMC/GenEvent.h"
 #include "HepMC/GenParticle.h"
 
@@ -18,33 +20,33 @@
 #include "GeneratorInterface/LHEInterface/interface/LHEEvent.h"
 
 class LHAupLesHouches : public Pythia8::LHAup {
-public:
-  LHAupLesHouches() : setScalesFromLHEF_(false), fEvAttributes(nullptr) { ; }
+  public:
+    LHAupLesHouches() : setScalesFromLHEF_(false),fEvAttributes(nullptr) {;}
 
-  //void loadRunInfo(const std::shared_ptr<lhef::LHERunInfo> &runInfo)
-  void loadRunInfo(lhef::LHERunInfo* runInfo) { this->runInfo = runInfo; }
+    //void loadRunInfo(const boost::shared_ptr<lhef::LHERunInfo> &runInfo)
+    void loadRunInfo(lhef::LHERunInfo* runInfo)
+      { this->runInfo = runInfo; }
 
-  //void loadEvent(const std::shared_ptr<lhef::LHEEvent> &event)
-  void loadEvent(lhef::LHEEvent* event) { this->event = event; }
+    //void loadEvent(const boost::shared_ptr<lhef::LHEEvent> &event)
+    void loadEvent(lhef::LHEEvent* event)
+      { this->event = event; }
+      
+    void setScalesFromLHEF(bool b) { setScalesFromLHEF_ = b; }
 
-  void setScalesFromLHEF(bool b) { setScalesFromLHEF_ = b; }
+    ~LHAupLesHouches() override {if(fEvAttributes) delete fEvAttributes;}
 
-  ~LHAupLesHouches() override {
-    if (fEvAttributes)
-      delete fEvAttributes;
-  }
+  private:
 
-private:
-  bool setInit() override;
-  bool setEvent(int idProcIn) override;
+    bool setInit() override;
+    bool setEvent(int idProcIn) override;
 
-  //std::shared_ptr<lhef::LHERunInfo> runInfo;
-  lhef::LHERunInfo* runInfo;
-  //std::shared_ptr<lhef::LHEEvent>	event;
-  lhef::LHEEvent* event;
+    //boost::shared_ptr<lhef::LHERunInfo> runInfo;
+    lhef::LHERunInfo* runInfo;
+    //boost::shared_ptr<lhef::LHEEvent>	event;
+    lhef::LHEEvent* event;
+    
+    // Flag to set particle production scales or not.
+    bool setScalesFromLHEF_;
 
-  // Flag to set particle production scales or not.
-  bool setScalesFromLHEF_;
-
-  std::map<std::string, std::string>* fEvAttributes;
+    std::map<std::string, std::string> * fEvAttributes;
 };

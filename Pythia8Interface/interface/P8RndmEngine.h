@@ -26,7 +26,8 @@ namespace gen {
 
   class P8RndmEngine : public Pythia8::RndmEngine {
   public:
-    P8RndmEngine() : randomEngine_(nullptr) {}
+
+    P8RndmEngine() : randomEngine_(nullptr) { }
 
     // Routine for generating a random number.
     double flat() override;
@@ -34,9 +35,10 @@ namespace gen {
     void setRandomEngine(CLHEP::HepRandomEngine* v) { randomEngine_ = v; }
 
   private:
+
     void throwNullPtr() const;
 
     CLHEP::HepRandomEngine* randomEngine_;
   };
-}  // namespace gen
+}
 #endif
