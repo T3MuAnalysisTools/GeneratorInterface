@@ -72,23 +72,18 @@ namespace CLHEP {
 using namespace gen;
 
 
-class Pythia8Hadronizer : public Py8InterfaceBase {
+class IterativePythia8Hadronizer : public Py8InterfaceBase {
 
   public:
 
-    Pythia8Hadronizer(const edm::ParameterSet &params);
-   ~Pythia8Hadronizer() override;
+    IterativePythia8Hadronizer(const edm::ParameterSet &params);
+   ~IterativePythia8Hadronizer() override;
  
     bool initializeForInternalPartons() override;
     bool initializeForExternalPartons();
-
-    bool TwoMuMassFilter(Event &ev);	
-    bool ThreeMuMassFilter(Event &ev);	
+	
     bool generatePartonsAndHadronize() override;
     bool hadronize();
-
-
-
 
     virtual bool residualDecay();
 
@@ -96,7 +91,7 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
 
     void statistics() override;
 
-    const char *classname() const override { return "Pythia8Hadronizer"; }
+    const char *classname() const override { return "IterativePythia8Hadronizer"; }
     
     GenLumiInfoHeader *getGenLumiInfoHeader() const override;
     
@@ -173,9 +168,9 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
     
 };
 
-const std::vector<std::string> Pythia8Hadronizer::p8SharedResources = { edm::SharedResourceNames::kPythia8 };
+const std::vector<std::string> IterativePythia8Hadronizer::p8SharedResources = { edm::SharedResourceNames::kPythia8 };
 
-Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params) :
+IterativePythia8Hadronizer::IterativePythia8Hadronizer(const edm::ParameterSet &params) :
   Py8InterfaceBase(params),
   comEnergy(params.getParameter<double>("comEnergy")),
   LHEInputFileName(params.getUntrackedParameter<std::string>("LHEInputFileName","")),
@@ -340,12 +335,12 @@ Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params) :
 }
 
 
-Pythia8Hadronizer::~Pythia8Hadronizer()
+IterativePythia8Hadronizer::~IterativePythia8Hadronizer()
 {
   
 }
 
-bool Pythia8Hadronizer::initializeForInternalPartons()
+bool IterativePythia8Hadronizer::initializeForInternalPartons()
 {
   
   bool status = false, status1 = false;
@@ -496,7 +491,7 @@ bool Pythia8Hadronizer::initializeForInternalPartons()
   status1 = fDecayer->init();
 
   if (useEvtGen) {
-    edm::LogInfo("Pythia8Hadronizer") << "Creating and initializing pythia8 EvtGen plugin";
+    edm::LogInfo("IterativePythia8Hadronizer") << "Creating and initializing pythia8 EvtGen plugin";
     evtgenDecays.reset(new EvtGenDecays(fMasterGen.get(), evtgenDecFile, evtgenPdlFile));
     for (unsigned int i=0; i<evtgenUserFiles.size(); i++) evtgenDecays->readDecayFile(evtgenUserFiles.at(i));
   }
@@ -505,7 +500,7 @@ bool Pythia8Hadronizer::initializeForInternalPartons()
 }
 
 
-bool Pythia8Hadronizer::initializeForExternalPartons()
+bool IterativePythia8Hadronizer::initializeForExternalPartons()
 {
 
   edm::LogInfo("Pythia8Interface") << "Initializing for external partons";
@@ -640,7 +635,7 @@ bool Pythia8Hadronizer::initializeForExternalPartons()
   status1 = fDecayer->init();
 
   if (useEvtGen) {
-    edm::LogInfo("Pythia8Hadronizer") << "Creating and initializing pythia8 EvtGen plugin";
+    edm::LogInfo("IterativePythia8Hadronizer") << "Creating and initializing pythia8 EvtGen plugin";
     evtgenDecays.reset(new EvtGenDecays(fMasterGen.get(), evtgenDecFile, evtgenPdlFile));
     for (unsigned int i=0; i<evtgenUserFiles.size(); i++) evtgenDecays->readDecayFile(evtgenUserFiles.at(i));
   }
@@ -649,7 +644,7 @@ bool Pythia8Hadronizer::initializeForExternalPartons()
 }
 
 
-void Pythia8Hadronizer::statistics()
+void IterativePythia8Hadronizer::statistics()
 {
   fMasterGen->stat();
 
@@ -667,134 +662,8 @@ void Pythia8Hadronizer::statistics()
   runInfo().setInternalXSec(GenRunInfoProduct::XSec(xsec,err));
 }
 
-bool Pythia8Hadronizer::TwoMuMassFilter( Event &ev){
-  vector<int> negMuons;
-  vector<int> posMuons;
 
-  for (int i = 0; i < ev.size(); ++i) {
-    if(ev.at(i).id() == 13)
-      {
-	if(ev.at(i).status() > 0)
-	  {
-	  if(ev.at(i).pT() > 3)
-	    {
-	    if(abs(ev.at(i).y())< 2.5)
-	      {
-	      negMuons.push_back(i);
-	      }
-	    }
-	  }
-      }
-  
-
-
-    if(ev.at(i).id() == -13)
-      {
-	if(ev.at(i).status() > 0)
-	  {
-	    if(ev.at(i).pT() > 3)
-	      {
-		if(abs(ev.at(i).y())< 2.5)
-		  {
-		    posMuons.push_back(i);
-		  }
-	      }
-	  }
-      }
-  }
-
-
-
-  for(unsigned int iN=0; iN<negMuons.size(); iN++)
-    for(unsigned  int iP=0; iP<posMuons.size(); iP++)
-      if( (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP)).p() ).mCalc() > 0.204 &&
-	  (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP)).p() ).mCalc() < 1.777) return true; //  search muons pair with 2mu < mass < mtau
-
-
-  return false;
-  
-}
-
-
-
-bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
-  float TripleMass(0.);
-
-
-
-  vector<int> negMuons;
-  vector<int> posMuons;
-
-  for (int i = 0; i < ev.size(); ++i) {
-
-    if(ev.at(i).id() == 13)
-      {
-	if(ev.at(i).status() > 0)
-	  {
-	    if(ev.at(i).pT() > 3)
-	      {
-		if(abs(ev.at(i).y())< 2.5)
-		  {
-		    negMuons.push_back(i);
-		  }
-	      }
-	  }
-      }
-    
-
-    if(ev.at(i).id() == -13)
-      {
-	if(ev.at(i).status() > 0)
-	  {
-	    if(ev.at(i).pT() > 3)
-	      {
-		if(abs(ev.at(i).y())< 2.5)
-		  {
-		    posMuons.push_back(i);
-		  }
-	      }
-	  }
-      }
-  }
-
-
-  if(posMuons.size()  == 0 || negMuons.size()==0) return false;
-
-
-  //search for Ptriplet
-  for(unsigned int iN = 0; iN < negMuons.size(); iN++){
-    for(unsigned int iP1 = 0; iP1 < posMuons.size()-1; iP1++){
-      for(unsigned int iP2 = iP1 + 1; iP2 < posMuons.size(); iP2++){
-	std::cout<<"Ptriplet  "<< ev.at(negMuons.at(iN)).pT() <<"  "<< ev.at(posMuons.at(iP1)).pT() << "  "<< ev.at(posMuons.at(iP2)).pT()<< std::endl;
-	if((ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() > 1.58 &&
-	   (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() < 2.02) return true;
-      }
-    }
-  }
-
-
-  //search for Mtriplet
-  for(unsigned int iP = 0; iP < posMuons.size(); iP++){
-    for(unsigned int iN1 = 0; iN1 < negMuons.size()-1; iN1++){
-      for(unsigned int iN2 = iN1 + 1; iN2 < negMuons.size(); iN2++){
-	if((ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() > 1.58 &&
-	   (ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() < 2.02) return true;
-      }
-    }
-  }
-
-  return false;
-  
-}
-
-
-
-
-
-
-
-
-bool Pythia8Hadronizer::generatePartonsAndHadronize()
+bool IterativePythia8Hadronizer::generatePartonsAndHadronize()
 {
 
   DJR.resize(0);
@@ -808,7 +677,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   }
 
   //------------------------- redecay B/D's 
-  int nRepeat = 20000;
+  int nRepeat = 10000;
    
 
 
@@ -865,26 +734,46 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
 
 
 
+ int nIterations(0);
+ float TripleMass(0.);
+ for (int iRepeat = 0; iRepeat < nRepeat; ++iRepeat) {
 
-  for (int iRepeat = 0; iRepeat < nRepeat; ++iRepeat) {
+   if (iRepeat > 0) {
+     pythiaEvent->restoreSize();
+     // Repeated decays: mark decayed B hadrons as undecayed.
+     for (int iB = 0; iB < nBHad; ++iB) pythiaEvent->at(iBHad.at(iB)).statusPos();
+   }
+  
+   if (!fMasterGen->moreDecays()) continue;
+  
+  
+   // -------- just some test filter
 
-    if (iRepeat > 0) {
-      pythiaEvent->restoreSize();
-      // Repeated decays: mark decayed B hadrons as undecayed.
-      for (int iB = 0; iB < nBHad; ++iB) pythiaEvent->at(iBHad.at(iB)).statusPos();
-    }
-  
-    if (!fMasterGen->moreDecays()) continue;
-  
-  
-   // -------- test filter
+   vector<int> Muons;
+   for (int i = 0; i < pythiaEvent->size(); ++i) {
+     int idAbs = abs(pythiaEvent->at(i).id());
+     if(idAbs == 13){
+       if(pythiaEvent->at(i).pT() > 3){
+	 if(abs(pythiaEvent->at(i).y())< 2.5){
+	   Muons.push_back(i);
+	 }
+       }
+     }
+   }
 
-   
-    if(TwoMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
-    //    if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
-    if(iRepeat == 14999) std::cout<<" too little repeats :( "<< std::endl;
-  }
-   
+
+   if(Muons.size() == 3){
+     if( abs(pythiaEvent->at(Muons.at(0)).charge() + pythiaEvent->at(Muons.at(1)).charge() +   pythiaEvent->at(Muons.at(2)).charge()) == 1  )
+       TripleMass = ( pythiaEvent->at(Muons.at(0)).p() + pythiaEvent->at(Muons.at(1)).p() + pythiaEvent->at(Muons.at(2)).p() ).mCalc();
+   }
+
+   if(TripleMass > 1 && TripleMass < 2) {
+     nIterations = iRepeat;
+     break;
+   }
+
+ }
+  
 
   //  return false if gluon with status > 0
   for (int i = 0; i < pythiaEvent->size(); ++i) {
@@ -896,10 +785,10 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
 
 
   //   check print out
-  // if(nIterations!=0){
-  //   std::cout<<"  Mass  "<< TripleMass <<"  iterations   "<< nIterations << std::endl;
+ if(nIterations!=0){
+   std::cout<<"  Mass  "<< TripleMass <<"  iterations   "<< nIterations << std::endl;
    //   fMasterGen->event.list();
-  // }
+ }
 
 
 
@@ -1001,7 +890,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
 }
 
 
-bool Pythia8Hadronizer::hadronize()
+bool IterativePythia8Hadronizer::hadronize()
 {
   DJR.resize(0);
   nME = -1;
@@ -1078,7 +967,7 @@ bool Pythia8Hadronizer::hadronize()
 }
 
 
-bool Pythia8Hadronizer::residualDecay()
+bool IterativePythia8Hadronizer::residualDecay()
 {
 
   Event* pythiaEvent = &(fMasterGen->event);
@@ -1127,12 +1016,7 @@ bool Pythia8Hadronizer::residualDecay()
 }
 
 
-
-
-//bool Pythia8Hadronizer::finalizeEvent()
-
-
-void Pythia8Hadronizer::finalizeEvent()
+void IterativePythia8Hadronizer::finalizeEvent()
 {
   bool lhe = lheEvent() != nullptr;
 
@@ -1177,7 +1061,7 @@ void Pythia8Hadronizer::finalizeEvent()
   }
 }
 
-GenLumiInfoHeader *Pythia8Hadronizer::getGenLumiInfoHeader() const {
+GenLumiInfoHeader *IterativePythia8Hadronizer::getGenLumiInfoHeader() const {
   GenLumiInfoHeader *genLumiInfoHeader = BaseHadronizer::getGenLumiInfoHeader();
   
   //fill lhe headers
@@ -1246,15 +1130,9 @@ GenLumiInfoHeader *Pythia8Hadronizer::getGenLumiInfoHeader() const {
   return genLumiInfoHeader;
 }
 
+typedef edm::GeneratorFilter<IterativePythia8Hadronizer, ExternalDecayDriver> IterativePythia8GeneratorFilter;
+DEFINE_FWK_MODULE(IterativePythia8GeneratorFilter);
 
 
-
-
-
-
-typedef edm::GeneratorFilter<Pythia8Hadronizer, ExternalDecayDriver> Pythia8GeneratorFilter;
-DEFINE_FWK_MODULE(Pythia8GeneratorFilter);
-
-
-typedef edm::HadronizerFilter<Pythia8Hadronizer, ExternalDecayDriver> Pythia8HadronizerFilter;
-DEFINE_FWK_MODULE(Pythia8HadronizerFilter);
+typedef edm::HadronizerFilter<IterativePythia8Hadronizer, ExternalDecayDriver> IterativePythia8HadronizerFilter;
+DEFINE_FWK_MODULE(IterativePythia8HadronizerFilter);
