@@ -880,9 +880,8 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
    // -------- test filter
 
    
-    if(TwoMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
+    if(TwoMuMassFilter(*pythiaEvent))  break;
     //    if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
-    if(iRepeat == 14999) std::cout<<" too little repeats :( "<< std::endl;
   }
    
 
