@@ -767,7 +767,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
       for(unsigned int iP2 = iP1 + 1; iP2 < posMuons.size(); iP2++){
 	//	std::cout<<"Ptriplet  mass  "<< (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() << std::endl;
 	//	std::cout<< " indices    "<< negMuons.at(iN) << "    "<< posMuons.at(iP1) << "   "<< posMuons.at(iP2) << std::endl;
-	ev.list();
+	//	ev.list();
 
 	if((ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() > 1.58 &&
 	   (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() < 2.20) return true;
@@ -812,7 +812,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   }
 
   //------------------------- redecay B/D's 
-  int nRepeat = 25000;
+  int nRepeat = 10000;
    
 
 
