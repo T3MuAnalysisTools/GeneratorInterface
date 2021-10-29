@@ -571,7 +571,7 @@ bool EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt,
     
 
     if(!del_daug){
-     int nRepeat = 500;
+     int nRepeat = 1;
      //     int Iterations(0);
      for(int iRepeat =0 ; iRepeat < nRepeat; iRepeat++){
 
