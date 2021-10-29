@@ -765,8 +765,8 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
   for(unsigned int iN = 0; iN < negMuons.size(); iN++){
     for(unsigned int iP1 = 0; iP1 < posMuons.size()-1; iP1++){
       for(unsigned int iP2 = iP1 + 1; iP2 < posMuons.size(); iP2++){
-	std::cout<<"Ptriplet  mass  "<< (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() << std::endl;
-	std::cout<< " indices    "<< negMuons.at(iN) << "    "<< posMuons.at(iP1) << "   "<< posMuons.at(iP2) << std::endl;
+	//	std::cout<<"Ptriplet  mass  "<< (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() << std::endl;
+	//	std::cout<< " indices    "<< negMuons.at(iN) << "    "<< posMuons.at(iP1) << "   "<< posMuons.at(iP2) << std::endl;
 	ev.list();
 
 	if((ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() > 1.58 &&
@@ -780,7 +780,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
   for(unsigned int iP = 0; iP < posMuons.size(); iP++){
     for(unsigned int iN1 = 0; iN1 < negMuons.size()-1; iN1++){
       for(unsigned int iN2 = iN1 + 1; iN2 < negMuons.size(); iN2++){
-	std::cout<<"Ntriplet  mass  "<<   (ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc()  << std::endl;
+	//	std::cout<<"Ntriplet  mass  "<<   (ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc()  << std::endl;
 	if((ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() > 1.58 &&
 	   (ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() < 2.20) return true;
       }
