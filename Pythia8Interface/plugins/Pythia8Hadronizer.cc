@@ -812,7 +812,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   }
 
   //------------------------- redecay B/D's 
-  int nRepeat = 10000;
+  int nRepeat = 25000;
    
 
 
@@ -885,7 +885,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
 
    
     //    if(TwoMuMassFilter(*pythiaEvent))  break;
-    if(ThreeMuMassFilter(*pythiaEvent)){  /* std::cout<<" nRepe  "<< iRepeat <<std::endl; */ break;}
+    if(ThreeMuMassFilter(*pythiaEvent)){   std::cout<<" nRepe  "<< iRepeat <<std::endl;  break;}
   }
    
 
