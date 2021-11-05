@@ -886,7 +886,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   
     if (!fMasterGen->moreDecays()) continue;
   
-    if(TwoMuMassFilter(*pythiaEvent))  break;
+    if(TwoMuMassFilter(*pythiaEvent)){  break;}
     //    if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
   }
    
