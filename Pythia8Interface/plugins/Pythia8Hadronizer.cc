@@ -823,10 +823,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   }
 
   //------------------------- redecay B/D's 
-  int nRepeat = 20000;
-   
-
-
+  int nRepeat = 50000;
   int pCodes[16] = {511, 521, 513, 523, 531, 533,  541, 5122,
 		   411, 421, 413, 423, 431, 433,  415, 10411 };
   int nCodes = 16;
@@ -850,8 +847,6 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   //  Event *savedEvent;
   int nBquark = 0;
   int stat;
-
- 
 
 
   for (int i = 0; i < pythiaEvent->size(); ++i) {
@@ -891,10 +886,6 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   
     if (!fMasterGen->moreDecays()) continue;
   
-  
-   // -------- test filter
-
-   
     if(TwoMuMassFilter(*pythiaEvent))  break;
     //    if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
   }
@@ -904,17 +895,6 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   for (int i = 0; i < pythiaEvent->size(); ++i) {
     if ( abs(pythiaEvent->at(i).id()) == 21 && pythiaEvent->at(i).status() > 0 ) return false;
   }
-
-
-	
-
-
-  //   check print out
-  // if(nIterations!=0){
-  //   std::cout<<"  Mass  "<< TripleMass <<"  iterations   "<< nIterations << std::endl;
-   //   fMasterGen->event.list();
-  // }
-
 
 
 //------------------------- redecay B/D's 
