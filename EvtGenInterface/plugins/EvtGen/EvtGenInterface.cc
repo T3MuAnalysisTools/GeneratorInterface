@@ -571,7 +571,7 @@ bool EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt,
     
 
     if(!del_daug){
-     int nRepeat = 1;
+     int nRepeat = 500;
      //     int Iterations(0);
      for(int iRepeat =0 ; iRepeat < nRepeat; iRepeat++){
 
@@ -603,46 +603,6 @@ bool EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt,
 
 
 
-    // std::cout<<"   check accepted   "<<find_decay(forcedparticles.at(i).at(j),431) << std::endl; 
-    //  bool Accepted = false;
-
-    // while(!Accepted){
-    //   m_EvtGen->generateDecay(parent);
-    //   go_through_daughters(parent); 
-    //   EvtHepMCEvent evtHepMCEvent;
-    //   evtHepMCEvent.constructEvent(parent,vInit);
-    //   HepMC::GenEvent* evtGenHepMCTree = evtHepMCEvent.getEvent();
-    //   parent->deleteTree();
-
-    //   // update the event using a recursive function
-    //   if(!evtGenHepMCTree->particles_empty()) update_particles(partHep,theEvent,(*evtGenHepMCTree->particles_begin()));
-    //   Accepted = find_decay(partHep, 431);
-    // }
-
-    // if(!del_daug)
-    //   {
-
-    // 	//if(find_decay(partHep, 431)){ std::cout<<"   ------------ YES ------------  "<< std::endl;}else{std::cout<<"   ------------ NO  -----------  "<< std::endl;}
-    // 	 if(find_decay(partHep, 431))
-    // 	   {	
-    // 	     std::cout<<"   ------------ YES ------------  "<< std::endl;
-    // 	     return true;
-    // 	   }
-    // 	 else {
-    // 	   go_through_daughters(parent);
-    // 	   if(!evtGenHepMCTree->particles_empty()) update_particles(partHep,theEvent,(*evtGenHepMCTree->particles_begin()));
-    // 	   std::cout<<"   ------------ NO  -----------  "<< std::endl;
-    // 	   return false;
-    // 	 }
-
-
-    //   }
-    //
-
-
-
-
-
   } else {
     // this should never hapend, in such case, speak out.
     return false;
@@ -661,9 +621,6 @@ bool EvtGenInterface::CheckEvtParticle(EvtParticle* p){
 
 
   if(p->getName() == "MyDs+" || p->getName() == "MyDs-"){
-    //    std::cout<<"  get Name  "<< p->getName() << "  id   " << p->getId().getId() << "  energy   " << p->getP4Lab().get(0)<<std::endl;
-    //   std::cout<< "  NDaug  "<< p->getNDaug() << std::endl;
-
 
     std::vector<TLorentzVector> triplet_vector;
     TLorentzVector Mu1(0,0,0,0);
@@ -671,16 +628,10 @@ bool EvtGenInterface::CheckEvtParticle(EvtParticle* p){
 
     for(unsigned int id =0; id < p->getNDaug(); id ++){
       EvtParticle* d= p->getDaug(id);
-      //      std::cout<<"  dau Name  "<< d->getName() << "    " << d->getP4Lab().get(0)<< "  pdg   "  << d->getPDGId() <<std::endl;
-
 
       if(fabs(d->getPDGId()) == 13){
 	Mu1.SetPxPyPzE(d->getP4Lab().get(1),d->getP4Lab().get(2),d->getP4Lab().get(3),d->getP4Lab().get(0));
-
-
 	triplet_vector.push_back(Mu1);
-
-	///	std::cout<< "  check momentum   "<< Mu1.M() <<std::endl;
       }
       
       if(fabs(d->getPDGId()) == 221){
@@ -691,7 +642,6 @@ bool EvtGenInterface::CheckEvtParticle(EvtParticle* p){
 	  if(fabs(dd->getPDGId()) == 13){
 	    mup4.SetPxPyPzE(dd->getP4Lab().get(1),dd->getP4Lab().get(2),dd->getP4Lab().get(3),dd->getP4Lab().get(0));
 	    triplet_vector.push_back(mup4);
-	    // std::cout<< "  check momentum 2  "<< mup4.M() <<std::endl;
 
 	  }
 	}
@@ -760,7 +710,6 @@ std::vector<TLorentzVector> EvtGenInterface::SortedPtMuons(std::vector<TLorentzV
 bool EvtGenInterface::filter_acceptance2(std::vector<TLorentzVector> particles)
 {
 
-  //  std::cout<<"  Now check muons   " << particles.size() << std::endl;
   if(particles.size()!=3) return false;
   std::vector<TLorentzVector> selected_particles;
   TLorentzVector sum(0,0,0,0);
@@ -769,12 +718,6 @@ bool EvtGenInterface::filter_acceptance2(std::vector<TLorentzVector> particles)
 
 
   std::vector< TLorentzVector > pTSorted = SortedPtMuons(particles);
-
-
-  //  std::cout<<" sort   "<< pTSorted.at(0).Pt() << "   "<< pTSorted.at(1).Pt() << "  "   << pTSorted.at(2).Pt() << std::endl;
-
-
-
 
   for(unsigned int ip; ip < pTSorted.size(); ip++){
     if(ip!=2){
@@ -801,20 +744,11 @@ bool EvtGenInterface::filter_acceptance2(std::vector<TLorentzVector> particles)
 
   if(selected_particles.size()==3){
 
-    //    std::cout<<"at least 3 guys found: print sum mas  "<< sum.M() <<std::endl;
-
-    //    for(auto p : selected_particles){
-      
-    //      std::cout<<" px,py,pz,pt,eta   "<< p.Px() << "   "<< p.Py() << "   "<<p.Pz() << "    "<<p.Pt() << "     "<< p.Eta() << std::endl;
-    //    }
-
     if(  ( sum.M() > 1.58  && sum.M() < 2.2 )){
       {
-
-	//	std::cout<<"print sum mas  "<< sum.M() <<std::endl;
+	
 	return true;
-
-
+	
       }
     }
   }
@@ -869,21 +803,17 @@ bool EvtGenInterface::find_decay(HepMC::GenParticle* sourceparticle, int pdgid){
       TLorentzVector par;
       for ( HepMC::GenVertex::particles_out_const_iterator d=sourceparticle->end_vertex()->particles_out_const_begin();   d!=sourceparticle->end_vertex()->particles_out_const_end();d++ )
 	{
-	  //	  std::cout<<" daug   "<< (*d)->pdg_id() << std::endl;
 	  if(abs((*d)->pdg_id())==13){ 
 	    par.SetPxPyPzE((*d)->momentum().px(),(*d)->momentum().py(),(*d)->momentum().pz(),(*d)->momentum().e());
-	    //	    std::cout<< "   pt "<< par.Pt() << std::endl;
 	    filterparticles.push_back((*d));
 	  }
 
 	  if(abs((*d)->pdg_id())==221){
 	    for ( HepMC::GenVertex::particles_out_const_iterator dd=(*d)->end_vertex()->particles_out_const_begin(); 
 		  dd!=(*d)->end_vertex()->particles_out_const_end();dd++ ){
-	      //  std::cout<<" eta daugs   "<< (*dd)->pdg_id() << std::endl;
 	      if(abs((*dd)->pdg_id())==13){
 		filterparticles.push_back((*dd));
 		TLorentzVector Temp; Temp.SetPxPyPzE((*dd)->momentum().px(),(*dd)->momentum().py(),(*dd)->momentum().pz(),(*dd)->momentum().e());
-		//		Temp.Print();
 		
 	      }
 	    }
