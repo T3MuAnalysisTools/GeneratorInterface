@@ -417,6 +417,7 @@ void EvtGenInterface::init(){
   // Forced decays are particles that are aliased and forced to be decayed by EvtGen
   if (fPSet->exists("list_forced_decays")){
     std::vector<std::string> forced_names = fPSet->getParameter< std::vector<std::string> >("list_forced_decays");
+    forced_parent_meson_name = forced_names;
     for(unsigned int i=0;i<forced_names.size();i++){
       //      std::cout<<"  forced)names "<< forced_names[i] << std::endl;
       EvtId found = EvtPDL::getId(forced_names[i]);
@@ -426,6 +427,21 @@ void EvtGenInterface::init(){
       forced_pdgids.push_back(EvtPDL::getStdHep(found));   // force_pdgids is the list of stdhep codes
     }
   }
+
+  if(fPSet->exists("list_forced_channels")) {
+    forced_channels = fPSet->getParameter< std::vector<int> >("list_forced_channels");
+    for(unsigned int i=0;i<forced_channels.size();i++){
+      std::cout<<"==================================== "<< forced_channels.at(i) << std::endl;
+    }
+  }
+
+  if(fPSet->exists("nredecays_of_parent")) {
+    nredecays_of_parent_particle = fPSet->getParameter< int >("nredecays_of_parent");
+  }
+  else nredecays_of_parent_particle = 0;
+ 
+
+
   edm::LogInfo("EvtGenInterface::~EvtGenInterface") << "Number of Forced Paricles is: " << forced_pdgids.size() << std::endl;
   for(unsigned int j=0;j<forced_id.size();j++){
     edm::LogInfo("EvtGenInterface::~EvtGenInterface") << "Forced Paricles are: " << forced_pdgids.at(j) << " " << forced_id.at(j) << std::endl;
@@ -571,17 +587,17 @@ bool EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt,
     
 
     if(!del_daug){
-     int nRepeat = 500;
-     //     int Iterations(0);
-     for(int iRepeat =0 ; iRepeat < nRepeat; iRepeat++){
+
+     int Iterations(0);
+     for(int iRepeat =0 ; iRepeat < nredecays_of_parent_particle; iRepeat++){
 
        // parent->deleteTree();
        m_EvtGen->generateDecay(parent);
-       if(CheckEvtParticle(parent)){ /*std::cout<<" success!!!!!!!!!!!!!!!"<< std::endl;  Iterations = iRepeat;*/ break; }
+       if(CheckEvtParticle(parent)){ std::cout<<" success!!!!!!!!!!!!!!!"<< std::endl; Iterations = iRepeat; break; }
        //       if(iRepeat == 499) std::cout<<" loop failed "<< std::endl;
      }
 
-     //     if(Iterations > 0) std::cout<<"iterations  "<< Iterations << std::endl;
+     if(Iterations > 0) std::cout<<"iterations  "<< Iterations << std::endl;
 
     }
 
@@ -620,7 +636,8 @@ bool EvtGenInterface::addToHepMC(HepMC::GenParticle* partHep,const EvtId &idEvt,
 bool EvtGenInterface::CheckEvtParticle(EvtParticle* p){
 
 
-  if(p->getName() == "MyDs+" || p->getName() == "MyDs-"){
+  if (   std::find(forced_parent_meson_name.begin(), forced_parent_meson_name.end(), p->getName()) != forced_parent_meson_name.end()) {    // find the MyReDec Particle in the event stream
+    //  if(p->getName() == "MyD+" || p->getName() == "MyD-"){
 
     std::vector<TLorentzVector> triplet_vector;
     TLorentzVector Mu1(0,0,0,0);
@@ -633,8 +650,9 @@ bool EvtGenInterface::CheckEvtParticle(EvtParticle* p){
 	Mu1.SetPxPyPzE(d->getP4Lab().get(1),d->getP4Lab().get(2),d->getP4Lab().get(3),d->getP4Lab().get(0));
 	triplet_vector.push_back(Mu1);
       }
-      
-      if(fabs(d->getPDGId()) == 221){
+
+      if (std::find(forced_channels.begin(), forced_channels.end(), fabs(d->getPDGId()) ) != forced_channels.end()) {    // find the sub decay
+	  //if(fabs(d->getPDGId()) == 113){
 
 	for(unsigned int idd =0; idd < d->getNDaug(); idd ++){
 	  EvtParticle* dd= d->getDaug(idd);
@@ -746,7 +764,7 @@ bool EvtGenInterface::filter_acceptance2(std::vector<TLorentzVector> particles)
 
     if(  ( sum.M() > 1.58  && sum.M() < 2.2 )){
       {
-	
+	std::cout<<"  Sum  "	<< sum.M() << std::endl;
 	return true;
 	
       }

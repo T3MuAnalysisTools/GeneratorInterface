@@ -70,6 +70,12 @@ namespace gen {
     std::vector<int> polarize_ids;
     std::vector<double> polarize_pol;
     std::map<int, float> polarizations;
+    std::vector<int> forced_channels;
+    std::vector<std::string> forced_parent_meson_name;
+    int nredecays_of_parent_particle;
+    int min_inv_mass;
+    int max_inv_mass;
+
     int BmixingOption = 1;        
     edm::ParameterSet* fPSet;
 
