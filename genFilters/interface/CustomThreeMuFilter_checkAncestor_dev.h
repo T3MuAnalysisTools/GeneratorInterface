@@ -1,5 +1,5 @@
-#ifndef CustomThreeMuFilter_h
-#define CustomThreeMuFilter_h
+#ifndef CustomThreeMuFilter_checkAncestor_dev_h
+#define CustomThreeMuFilter_checkAncestor_dev_h
 
 // -*- C++ -*-
 //
@@ -43,10 +43,10 @@ namespace edm {
 // class declaration
 //
 
-class CustomThreeMuFilter : public edm::EDFilter {
+class CustomThreeMuFilter_checkAncestor_dev : public edm::EDFilter {
  public:
-  explicit CustomThreeMuFilter(const edm::ParameterSet&);
-  ~CustomThreeMuFilter() override;
+  explicit CustomThreeMuFilter_checkAncestor_dev(const edm::ParameterSet&);
+  ~CustomThreeMuFilter_checkAncestor_dev() override;
   
  private:
   bool filter(edm::Event&, const edm::EventSetup&) override;

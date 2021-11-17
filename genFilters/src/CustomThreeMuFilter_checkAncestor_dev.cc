@@ -1,7 +1,7 @@
-#include "GeneratorInterface/genFilters/interface/CustomThreeMuFilter.h"
+#include "GeneratorInterface/genFilters/interface/CustomThreeMuFilter_checkAncestor_dev.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 
-CustomThreeMuFilter::CustomThreeMuFilter(const edm::ParameterSet& iConfig) :
+CustomThreeMuFilter_checkAncestor_dev::CustomThreeMuFilter_checkAncestor_dev(const edm::ParameterSet& iConfig) :
   src_(iConfig.getUntrackedParameter<edm::InputTag>("src",edm::InputTag(std::string("generator"),"unsmeared"))),
   token_(consumes<edm::HepMCProduct>(src_)),
   numRequired_(iConfig.getParameter<int>("NumRequired")),
@@ -34,7 +34,7 @@ CustomThreeMuFilter::CustomThreeMuFilter(const edm::ParameterSet& iConfig) :
        ||  (status_.size() > 1 && particleID_.size() != status_.size()) 
        ||  (motherID_.size() > 1 && particleID_.size() != motherID_.size())
        ) {
-    edm::LogWarning("CustomThreeMuFilter") << "WARNING: CustomThreeMuFilter: size of PtMin, EtaMax, motherID, and/or Status does not match ParticleID size!" << std::endl;   
+    edm::LogWarning("CustomThreeMuFilter_checkAncestor_dev") << "WARNING: CustomThreeMuFilter_checkAncestor_dev: size of PtMin, EtaMax, motherID, and/or Status does not match ParticleID size!" << std::endl;   
   }
   
   // Fill arrays with defaults if necessary
@@ -48,7 +48,7 @@ CustomThreeMuFilter::CustomThreeMuFilter(const edm::ParameterSet& iConfig) :
     motherID_.push_back(defmother[0]);
 }
 
-CustomThreeMuFilter::~CustomThreeMuFilter()
+CustomThreeMuFilter_checkAncestor_dev::~CustomThreeMuFilter_checkAncestor_dev()
 {
  
   // do anything here that needs to be done at destruction time
@@ -56,7 +56,7 @@ CustomThreeMuFilter::~CustomThreeMuFilter()
 
 }
 
-bool CustomThreeMuFilter::isAncestor(HepMC::GenParticle* particle, int IDtoMatch) const {
+bool CustomThreeMuFilter_checkAncestor_dev::isAncestor(HepMC::GenParticle* particle, int IDtoMatch) const {
   for (HepMC::GenVertex::particle_iterator ancestor = particle->production_vertex()->particles_begin(HepMC::ancestors);
        ancestor != particle->production_vertex()->particles_end(HepMC::ancestors);
        ++ancestor) {
@@ -77,7 +77,7 @@ bool CustomThreeMuFilter::isAncestor(HepMC::GenParticle* particle, int IDtoMatch
 
 
 // ------------ method called to skim the data  ------------
-bool CustomThreeMuFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
+bool CustomThreeMuFilter_checkAncestor_dev::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
 
@@ -279,10 +279,10 @@ bool CustomThreeMuFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSet
 
 
 // ------------ method called once each job just after ending the event loop  ------------
-void CustomThreeMuFilter::endJob() {
-  edm::LogInfo("CustomThreeMuFilter") << "=== Results of CustomThreeMuFilter: passed "
+void CustomThreeMuFilter_checkAncestor_dev::endJob() {
+  edm::LogInfo("CustomThreeMuFilter_checkAncestor_dev") << "=== Results of CustomThreeMuFilter_checkAncestor_dev: passed "
                                         << passedEvents_ << "/" << totalEvents_ << " events" << std::endl;
 }
 
 //define this as a plug-in
-DEFINE_FWK_MODULE(CustomThreeMuFilter);
+DEFINE_FWK_MODULE(CustomThreeMuFilter_checkAncestor_dev);
