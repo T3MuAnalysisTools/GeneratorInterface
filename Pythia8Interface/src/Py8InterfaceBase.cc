@@ -121,7 +121,7 @@ bool Py8InterfaceBase::readSettings( int )
    fMasterGen->setRndmEnginePtr( &p8RndmEngine_ );
    fDecayer->setRndmEnginePtr( &p8RndmEngine_ );
   
-   fMasterGen->readString("Next:numberShowEvent = 0");
+   fMasterGen->readString("Next:numberShowEvent = 1");
    fDecayer->readString("Next:numberShowEvent = 0");  
   
    edm::ParameterSet currentParameters;

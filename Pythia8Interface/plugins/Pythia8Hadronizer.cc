@@ -111,6 +111,11 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
     /// Center-of-Mass energy
     double       comEnergy;
 
+    /// Number of re-decays
+
+    int nRepeat;
+    std::vector<int> ParticlesIDtoRedecay;
+
     std::string LHEInputFileName;
     std::auto_ptr<LHAupLesHouches>  lhaUP;
 
@@ -178,6 +183,8 @@ const std::vector<std::string> Pythia8Hadronizer::p8SharedResources = { edm::Sha
 Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params) :
   Py8InterfaceBase(params),
   comEnergy(params.getParameter<double>("comEnergy")),
+  nRepeat(params.getParameter<int>("nRepeat")),
+  ParticlesIDtoRedecay(params.getParameter< std::vector<int> >("ParticlesIDtoRedecay")),
   LHEInputFileName(params.getUntrackedParameter<std::string>("LHEInputFileName","")),
   fInitialState(PP),
   nME(-1), nMEFiltered(-1), nISRveto(0), nFSRveto(0)
@@ -822,23 +829,12 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
     fJetMatchingHook->beforeHadronization( lheEvent() );
   }
 
-  //------------------------- redecay B/D's 
-  int nRepeat = 50000;
-  int pCodes[16] = {511, 521, 513, 523, 531, 533,  541, 5122,
-		   411, 421, 413, 423, 431, 433,  415, 10411 };
-  int nCodes = 16;
-
-
-
-  for (int iC = 0; iC < nCodes; ++iC)   fMasterGen->particleData.mayDecay( pCodes[iC], false);
-
-
+  //------------------------- redecay B/D's  according to nRepeat
+  for(int iC : ParticlesIDtoRedecay)fMasterGen->particleData.mayDecay( iC, false);
 
 
  if (!fMasterGen->next())
     return false;
-
-
 
   vector<int> iBHad;
   int nBHad = 0;
@@ -848,18 +844,16 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   int nBquark = 0;
   int stat;
 
-
   for (int i = 0; i < pythiaEvent->size(); ++i) {
     stat = abs(pythiaEvent->at(i).status());
     if ( abs(pythiaEvent->at(i).id()) == 5 && (stat == 62 || stat == 63)) ++nBquark;
   }
 
-
   iBHad.resize(0);
   for (int i = 0; i < pythiaEvent->size(); ++i) {
     int idAbs = abs(pythiaEvent->at(i).id());
-    for (int iC = 0; iC < nCodes; ++iC)
-      if (idAbs == pCodes[iC]) {
+    for(int iC : ParticlesIDtoRedecay)
+      if (idAbs == iC) {
 	iBHad.push_back(i);
 	break;
       }
@@ -871,8 +865,7 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
    
 
   pythiaEvent->saveSize();
-  for (int iC = 0; iC < nCodes; ++iC)     fMasterGen->particleData.mayDecay( pCodes[iC], true);
-
+  for(int iC : ParticlesIDtoRedecay)      fMasterGen->particleData.mayDecay( iC, true);
 
 
 
@@ -886,8 +879,9 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   
     if (!fMasterGen->moreDecays()) continue;
   
-    if(TwoMuMassFilter(*pythiaEvent))  break;
+    if(TwoMuMassFilter(*pythiaEvent)) { std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
     //    if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
+    if(iRepeat == 49999){std::cout<<"  loop failed  "<< std::endl;}
   }
    
 
