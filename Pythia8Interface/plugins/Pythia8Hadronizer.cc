@@ -65,6 +65,7 @@ using namespace Pythia8;
 
 #include "GeneratorInterface/ExternalDecays/interface/ExternalDecayDriver.h"
 
+#include "TLorentzVector.h"
 namespace CLHEP {
   class HepRandomEngine;
 }
@@ -678,38 +679,40 @@ bool Pythia8Hadronizer::TwoMuMassFilter( Event &ev){
   vector<int> negMuons;
   vector<int> posMuons;
 
-  for (int i = 0; i < ev.size(); ++i) {
-    if(ev.at(i).id() == 13)
-      {
-	if(ev.at(i).status() > 0)
-	  {
-	  if(ev.at(i).pT() > 3)
+  for (int i = 0; i < ev.size(); ++i)
+    {
+      if(ev.at(i).id() == 13)
+	{
+	  if(ev.at(i).status() > 0)
 	    {
-	    if(abs(ev.at(i).y())< 2.5)
-	      {
-	      negMuons.push_back(i);
-	      }
+	      if(ev.at(i).pT() > 3)
+		{
+		  if(abs(ev.at(i).y())< 2.5)
+		    {
+		      negMuons.push_back(i);
+		    }
+		}
 	    }
-	  }
-      }
-  
+	}
+      
+      
+      
+      if(ev.at(i).id() == -13)
+	{
+	  if(ev.at(i).status() > 0)
+	    {
+	      if(ev.at(i).pT() > 3)
+		{
+		  if(abs(ev.at(i).y())< 2.5)
+		    {
+		      posMuons.push_back(i);
+		    }
+		}
+	    }
+	}
+      
 
-
-    if(ev.at(i).id() == -13)
-      {
-	if(ev.at(i).status() > 0)
-	  {
-	    if(ev.at(i).pT() > 3)
-	      {
-		if(abs(ev.at(i).y())< 2.5)
-		  {
-		    posMuons.push_back(i);
-		  }
-	      }
-	  }
-      }
   }
-
 
 
   for(unsigned int iN=0; iN<negMuons.size(); iN++)
@@ -740,10 +743,8 @@ bool Pythia8Hadronizer::TwoMuMassFilter( Event &ev){
 
 
 bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
+
   float TripleMass(0.);
-
-
-
   vector<int> negMuons;
   vector<int> posMuons;
 
