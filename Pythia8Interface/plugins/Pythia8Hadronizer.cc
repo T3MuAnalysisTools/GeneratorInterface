@@ -115,6 +115,7 @@ class Pythia8Hadronizer : public Py8InterfaceBase {
     /// Number of re-decays
 
     int nRepeat;
+    std::string ReDecayConditions;
     std::vector<int> ParticlesIDtoRedecay;
 
     std::string LHEInputFileName;
@@ -185,6 +186,7 @@ Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params) :
   Py8InterfaceBase(params),
   comEnergy(params.getParameter<double>("comEnergy")),
   nRepeat(params.getParameter<int>("nRepeat")),
+  ReDecayConditions(params.getParameter<std::string>("ReDecayConditions")),
   ParticlesIDtoRedecay(params.getParameter< std::vector<int> >("ParticlesIDtoRedecay")),
   LHEInputFileName(params.getUntrackedParameter<std::string>("LHEInputFileName","")),
   fInitialState(PP),
@@ -877,12 +879,16 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
       // Repeated decays: mark decayed B hadrons as undecayed.
       for (int iB = 0; iB < nBHad; ++iB) pythiaEvent->at(iBHad.at(iB)).statusPos();
     }
-  
+    
     if (!fMasterGen->moreDecays()) continue;
-  
-    if(TwoMuMassFilter(*pythiaEvent)) { std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
-    //    if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
-    if(iRepeat == 49999){std::cout<<"  loop failed  "<< std::endl;}
+    if(ReDecayConditions=="TwoMuMass")
+      {
+	if(TwoMuMassFilter(*pythiaEvent)) { std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
+      }
+    if(ReDecayConditions=="ThreeMuMass")
+      {
+	if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepe  "<< iRepeat <<std::endl; break;}
+      }
   }
    
 
