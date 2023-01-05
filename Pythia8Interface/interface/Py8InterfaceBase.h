@@ -32,6 +32,7 @@ namespace gen {
          virtual bool generatePartonsAndHadronize() = 0;
          bool decay() { return true; } // NOT used - let's call it "design imperfection"
          bool readSettings( int ); // common func
+         void makeTmpSLHA(const std::string&); //helper for above
          virtual bool initializeForInternalPartons() = 0;
          bool declareStableParticles( const std::vector<int>& ); // common func
          bool declareSpecialSettings( const std::vector<std::string>& ); // common func
@@ -44,8 +45,8 @@ namespace gen {
 
       protected:
          
-	 std::auto_ptr<Pythia8::Pythia> fMasterGen;
-	 std::auto_ptr<Pythia8::Pythia> fDecayer;
+	 std::unique_ptr<Pythia8::Pythia> fMasterGen;
+	 std::unique_ptr<Pythia8::Pythia> fDecayer;
 	 HepMC::Pythia8ToHepMC          toHepMC;
 // 	 ParameterCollector	        fParameters;
          edm::ParameterSet	        fParameters;
@@ -59,7 +60,7 @@ namespace gen {
          // EvtGen plugin
          //
          bool useEvtGen;
-         std::auto_ptr<EvtGenDecays> evtgenDecays;
+         std::shared_ptr<EvtGenDecays> evtgenDecays;
          std::string evtgenDecFile;
          std::string evtgenPdlFile;
          std::vector<std::string> evtgenUserFiles;
