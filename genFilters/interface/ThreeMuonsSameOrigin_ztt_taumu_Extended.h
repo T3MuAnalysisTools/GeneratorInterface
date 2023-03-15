@@ -53,13 +53,13 @@ namespace edm {
   class IsdR {
   public:
       // returns true if two muons have dR less than maxdR
-      bool operator()(float phi1, float phi2, float eta1, float eta2, float maxdR) {
-          float dphi = phi1 - phi2;
+      double operator()(double phi1, double phi2, double eta1, double eta2) {
+          double dphi = phi1 - phi2;
           if(dphi >= TMath::Pi()) dphi = dphi-2*TMath::Pi();// makes dphi between -pi and pi
           if(dphi <=-TMath::Pi()) dphi = dphi+2*TMath::Pi();
-          float dR = sqrt(pow(dphi,2) + pow(eta1 - eta2,2));
-          if ( dR >= maxdR ) return 1;
-          return 0;
+          double dR = sqrt(pow(dphi,2) + pow(eta1 - eta2,2));
+          
+          return dR;
       }
   };
   
