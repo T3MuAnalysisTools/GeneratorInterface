@@ -758,7 +758,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
 	  {
 	    if(ev.at(i).pT() > 1.0)
 	      {
-		if(abs(ev.at(i).y())< 5.0)
+		if(abs(ev.at(i).y())< 4.1)
 		  {
 		    negMuons.push_back(i);
 		  }
@@ -773,7 +773,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
 	  {
 	    if(ev.at(i).pT() > 1.0)
 	      {
-		if(abs(ev.at(i).y())< 5.0)
+		if(abs(ev.at(i).y())< 4.1)
 		  {
 		    posMuons.push_back(i);
 		  }
@@ -786,6 +786,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
   if(posMuons.size()  == 0 || negMuons.size()==0) return false;
 
 
+  /*
   //search for Ptriplet
   for(unsigned int iN = 0; iN < negMuons.size(); iN++){
     for(unsigned int iP1 = 0; iP1 < posMuons.size()-1; iP1++){
@@ -804,6 +805,38 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
       for(unsigned int iN2 = iN1 + 1; iN2 < negMuons.size(); iN2++){
 	if((ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() > 1.39 &&
 	   (ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() < 2.11) return true;
+      }
+    }
+  }
+  */
+  //search for Ptriplet
+  for(unsigned int iN = 0; iN < negMuons.size(); iN++){
+    for(unsigned int iP1 = 0; iP1 < posMuons.size()-1; iP1++){
+      for(unsigned int iP2 = iP1 + 1; iP2 < posMuons.size(); iP2++){
+
+	if((ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() > 1.39 &&
+	   (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() < 2.11) {
+                   auto pTriplet = ev.at(negMuons.at(iN)).p()+ ev.at(posMuons.at(iP1)).p()+ ev.at(posMuons.at(iP2)).p();
+                   if(pTriplet.pT()>10.0){
+                           return true;
+                   }
+           }
+      }
+    }
+  }
+
+
+  //search for Mtriplet
+  for(unsigned int iP = 0; iP < posMuons.size(); iP++){
+    for(unsigned int iN1 = 0; iN1 < negMuons.size()-1; iN1++){
+      for(unsigned int iN2 = iN1 + 1; iN2 < negMuons.size(); iN2++){
+	if((ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() > 1.39 &&
+	   (ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() < 2.11) {
+                   auto mTriplet = ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p();
+                   if(mTriplet.pT()>10.0){
+                           return true;
+                   }
+           }
       }
     }
   }
@@ -873,6 +906,8 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
 
 
   int final_repetition(1); //the actual no where the loop is broken
+  bool whether_evt_pass(false);
+  //long long final_repetition = 1000000000000000000LL; //the actual no where the loop is broken. Events that don't pass should have low weights.
   for (int iRepeat = 0; iRepeat < nRepeat; ++iRepeat) {
 
     if (iRepeat > 0) {
@@ -884,14 +919,13 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
     if (!fMasterGen->moreDecays()) continue;
     if(ReDecayConditions=="TwoMuMass")
       {
-	if(TwoMuMassFilter(*pythiaEvent)) { std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat; break;}
+	if(TwoMuMassFilter(*pythiaEvent)) { std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat; whether_evt_pass = true; break;}
       }
     if(ReDecayConditions=="ThreeMuMass")
       {
-	if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat; break;}
+	if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat; whether_evt_pass = true; break;}
       }
   }
-   
 
   //  return false if gluon with status > 0
   for (int i = 0; i < pythiaEvent->size(); ++i) {
@@ -937,7 +971,14 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
   
   // apply 1/nRepeat to all weights
   double invN = 1.0 / final_repetition;
-  for (auto& w : event()->weights()) w *= invN;
+  for (auto& w : event()->weights()){
+          if(whether_evt_pass){
+                  w *= invN;
+          }
+          else{
+                  w *= 0.0;
+          }
+  }
   
   //add ckkw/umeps/unlops merging weight
   if (mergeweight!=1.) {
