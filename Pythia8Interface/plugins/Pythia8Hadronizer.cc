@@ -747,6 +747,8 @@ bool Pythia8Hadronizer::TwoMuMassFilter( Event &ev){
 bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
 
   float TripleMass(0.);
+  
+  /*
   vector<int> negMuons;
   vector<int> posMuons;
 
@@ -758,7 +760,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
 	  {
 	    if(ev.at(i).pT() > 1.0)
 	      {
-		if(abs(ev.at(i).y())< 4.1)
+		if(abs(ev.at(i).y())< 2.9)
 		  {
 		    negMuons.push_back(i);
 		  }
@@ -773,7 +775,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
 	  {
 	    if(ev.at(i).pT() > 1.0)
 	      {
-		if(abs(ev.at(i).y())< 4.1)
+		if(abs(ev.at(i).y())< 2.9)
 		  {
 		    posMuons.push_back(i);
 		  }
@@ -786,7 +788,7 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
   if(posMuons.size()  == 0 || negMuons.size()==0) return false;
 
 
-  /*
+  
   //search for Ptriplet
   for(unsigned int iN = 0; iN < negMuons.size(); iN++){
     for(unsigned int iP1 = 0; iP1 < posMuons.size()-1; iP1++){
@@ -809,16 +811,145 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
     }
   }
   */
+  
+  vector<int> negMuons;
+  vector<int> posMuons;
+  
+  vector<int> negPionsOrKaons;
+  vector<int> posPionsOrKaons;
+
+  for (int i = 0; i < ev.size(); ++i) {
+
+    if(ev.at(i).id() == 13)
+      {
+	if(ev.at(i).status() > 0)
+	  {
+	    if(ev.at(i).pT() > 1.0)
+	      {
+		if(abs(ev.at(i).eta())< 2.9)
+		  {
+		    negMuons.push_back(i);
+		  }
+	      }
+	  }
+      }
+    
+
+    if(ev.at(i).id() == -13)
+      {
+	if(ev.at(i).status() > 0)
+	  {
+	    if(ev.at(i).pT() > 1.0)
+	      {
+		if(abs(ev.at(i).eta())< 2.9)
+		  {
+		    posMuons.push_back(i);
+		  }
+	      }
+	  }
+      }
+  }
+  
+  for (int i = 0; i < ev.size(); ++i) {
+
+    if(ev.at(i).id() == 211 || ev.at(i).id() == 321)
+      {
+	if(ev.at(i).status() > 0)
+	  {
+	    if(ev.at(i).pT() > 1.0)
+	      {
+		if(abs(ev.at(i).eta())< 2.9)
+		  {
+		    negPionsOrKaons.push_back(i);
+		  }
+	      }
+	  }
+      }
+    
+
+    if(ev.at(i).id() == -211 || ev.at(i).id() == -321)
+      {
+	if(ev.at(i).status() > 0)
+	  {
+	    if(ev.at(i).pT() > 1.0)
+	      {
+		if(abs(ev.at(i).eta())< 2.9)
+		  {
+		    posPionsOrKaons.push_back(i);
+		  }
+	      }
+	  }
+      }
+  }
+  
+  vector<int> OppositeSide;//Fake jets, taus, muons, electrons
+  for (int i = 0; i < ev.size(); ++i) {
+
+    int partID = abs(ev.at(i).id());
+    if(partID == 15 || partID == 13 || partID == 11 || partID == 1 || partID == 2 || partID == 3 || partID == 4 || partID == 5 || partID == 21)
+      {
+	if(ev.at(i).status() > 0)
+	  {
+	    if(ev.at(i).pT() > 1.0)
+	      {
+		if(abs(ev.at(i).eta())< 3.1)
+		  {
+		    OppositeSide.push_back(i);
+		  }
+	      }
+	  }
+      }
+  }
+  
+  
+  
+  bool WhetherThreeMuonPosPass(false);
+  bool WhetherThreeMuonNegPass(false);
+  bool WhetherTwoMuonandPionPosPass(false);
+  bool WhetherTwoMuonandPionNegPass(false);
+
+
+  //With just muons
+  
+  if(posMuons.size()  == 0 || negMuons.size()==0) return false;
+  
   //search for Ptriplet
   for(unsigned int iN = 0; iN < negMuons.size(); iN++){
-    for(unsigned int iP1 = 0; iP1 < posMuons.size()-1; iP1++){
-      for(unsigned int iP2 = iP1 + 1; iP2 < posMuons.size(); iP2++){
-
-	if((ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() > 1.39 &&
-	   (ev.at(negMuons.at(iN)).p() + ev.at(posMuons.at(iP1)).p() + ev.at(posMuons.at(iP2)).p()).mCalc() < 2.11) {
-                   auto pTriplet = ev.at(negMuons.at(iN)).p()+ ev.at(posMuons.at(iP1)).p()+ ev.at(posMuons.at(iP2)).p();
-                   if(pTriplet.pT()>10.0){
-                           return true;
+    for(unsigned int iP1 = 0; iP1 < posMuons.size(); iP1++){
+      for(unsigned int iP2 = 0; iP2 < iP1; iP2++){
+	auto part1 = ev.at(negMuons.at(iN)).p();
+        auto part2 = ev.at(posMuons.at(iP1)).p();
+        auto part3 = ev.at(posMuons.at(iP2)).p();
+        auto massTriplet = part1 + part2 + part3;
+        if((massTriplet).mCalc() > 1.39 &&
+	   (massTriplet).mCalc() < 2.11) {
+                   
+                   if(massTriplet.pT()>14.5){
+                           //std::cout<<" Muon Positive " <<std::endl;
+                           WhetherThreeMuonPosPass = true;
+                           //std::cout<<" Particle 1, x: "<< part1.px() <<" , y: "<< part1.py() <<" , z: "<< part1.pz() <<std::endl;
+                           //std::cout<<" Particle 2, x: "<< part2.px() <<" , y: "<< part2.py() <<" , z: "<< part2.pz() <<std::endl;
+                           //std::cout<<" Particle 3, x: "<< part3.px() <<" , y: "<< part3.py() <<" , z: "<< part3.pz() <<std::endl;
+                           
+                           //double dR12 = std::sqrt(std::pow(part1.eta() - part2.eta(), 2) + std::pow(std::fabs(part1.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part2.phi()) : std::fabs(part1.phi() - part2.phi()), 2));
+                           //double dR13 = std::sqrt(std::pow(part1.eta() - part3.eta(), 2) + std::pow(std::fabs(part1.phi() - part3.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part3.phi()) : std::fabs(part1.phi() - part3.phi()), 2));
+                           //double dR32 = std::sqrt(std::pow(part3.eta() - part2.eta(), 2) + std::pow(std::fabs(part3.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part3.phi() - part2.phi()) : std::fabs(part3.phi() - part2.phi()), 2));
+                           //std::cout<<" dR12: "<< dR12 <<" , dR13: "<< dR13 <<" , dR32: "<< dR32 << " , triplet pT: "<< massTriplet.pT() << " , triplet eta: " << massTriplet.eta() <<std::endl;
+                           
+                           /*
+                           if(OppositeSide.size()>0){
+                           for(unsigned int iO = 0; iO < OppositeSide.size(); iO++){
+                                   if(OppositeSide.at(iO)!=posMuons.at(iP1)&&OppositeSide.at(iO)!=negMuons.at(iN)&&OppositeSide.at(iO)!=posMuons.at(iP2)){
+                                           auto oppVect = ev.at(OppositeSide.at(iO)).p();
+                                           double dRtoOpp = std::sqrt(std::pow(massTriplet.eta() - oppVect.eta(), 2) + std::pow(std::fabs(massTriplet.phi() - oppVect.phi()) > M_PI ? 2 * M_PI - std::fabs(massTriplet.phi() - oppVect.phi()) : std::fabs(massTriplet.phi() - oppVect.phi()), 2));
+                                           std::cout<<" dR to opposite side: "<< dRtoOpp <<" , inv mass: "<< (massTriplet+oppVect).mCalc() <<" , particleID: "<< ev.at(OppositeSide.at(iO)).id() <<std::endl;
+                                           if(dRtoOpp>0.5){
+                                                   return true;
+                                           }
+                                   }
+                           }
+                           }
+                           */
                    }
            }
       }
@@ -826,20 +957,156 @@ bool Pythia8Hadronizer::ThreeMuMassFilter( Event &ev){
   }
 
 
+  
   //search for Mtriplet
   for(unsigned int iP = 0; iP < posMuons.size(); iP++){
-    for(unsigned int iN1 = 0; iN1 < negMuons.size()-1; iN1++){
-      for(unsigned int iN2 = iN1 + 1; iN2 < negMuons.size(); iN2++){
-	if((ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() > 1.39 &&
-	   (ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p()).mCalc() < 2.11) {
-                   auto mTriplet = ev.at(posMuons.at(iP)).p() + ev.at(negMuons.at(iN1)).p() + ev.at(negMuons.at(iN2)).p();
-                   if(mTriplet.pT()>10.0){
-                           return true;
+    for(unsigned int iN1 = 0; iN1 < negMuons.size(); iN1++){
+      for(unsigned int iN2 = 0; iN2 < iN1; iN2++){
+	auto part1 = ev.at(posMuons.at(iP)).p();
+        auto part2 = ev.at(negMuons.at(iN1)).p();
+        auto part3 = ev.at(negMuons.at(iN2)).p();
+        auto massTriplet = part1 + part2 + part3;
+        if((massTriplet).mCalc() > 1.39 &&
+	   (massTriplet).mCalc() < 2.11) {
+                   
+                   if(massTriplet.pT()>14.5){
+                           
+                           //std::cout<<" Muon Negative " <<std::endl;
+                           WhetherThreeMuonNegPass = true;
+                           //std::cout<<" Particle 1, x: "<< part1.px() <<" , y: "<< part1.py() <<" , z: "<< part1.pz() <<std::endl;
+                           //std::cout<<" Particle 2, x: "<< part2.px() <<" , y: "<< part2.py() <<" , z: "<< part2.pz() <<std::endl;
+                           //std::cout<<" Particle 3, x: "<< part3.px() <<" , y: "<< part3.py() <<" , z: "<< part3.pz() <<std::endl;
+                           
+                           //double dR12 = std::sqrt(std::pow(part1.eta() - part2.eta(), 2) + std::pow(std::fabs(part1.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part2.phi()) : std::fabs(part1.phi() - part2.phi()), 2));
+                           //double dR13 = std::sqrt(std::pow(part1.eta() - part3.eta(), 2) + std::pow(std::fabs(part1.phi() - part3.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part3.phi()) : std::fabs(part1.phi() - part3.phi()), 2));
+                           //double dR32 = std::sqrt(std::pow(part3.eta() - part2.eta(), 2) + std::pow(std::fabs(part3.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part3.phi() - part2.phi()) : std::fabs(part3.phi() - part2.phi()), 2));
+                           //std::cout<<" dR12: "<< dR12 <<" , dR13: "<< dR13 <<" , dR32: "<< dR32 << " , triplet pT: "<< massTriplet.pT() << " , triplet eta: " << massTriplet.eta() <<std::endl;
+                           
+                           /*
+                           if(OppositeSide.size()>0){
+                           for(unsigned int iO = 0; iO < OppositeSide.size(); iO++){
+                                   if(OppositeSide.at(iO)!=posMuons.at(iP)&&OppositeSide.at(iO)!=negMuons.at(iN1)&&OppositeSide.at(iO)!=negMuons.at(iN2)){
+                                           auto oppVect = ev.at(OppositeSide.at(iO)).p();
+                                           double dRtoOpp = std::sqrt(std::pow(massTriplet.eta() - oppVect.eta(), 2) + std::pow(std::fabs(massTriplet.phi() - oppVect.phi()) > M_PI ? 2 * M_PI - std::fabs(massTriplet.phi() - oppVect.phi()) : std::fabs(massTriplet.phi() - oppVect.phi()), 2));
+                                           std::cout<<" dR to opposite side: "<< dRtoOpp <<" , inv mass: "<< (massTriplet+oppVect).mCalc() <<" , particleID: "<< ev.at(OppositeSide.at(iO)).id() <<std::endl;
+                                           if(dRtoOpp>0.5){
+                                                   return true;
+                                           }
+                                   }
+                           }
+                           }
+                           */
+                           
                    }
            }
       }
     }
   }
+  
+  
+  //With Pions or Kaons
+  
+  //search for pospion+2muons
+  if(posPionsOrKaons.size()>0){
+  for(unsigned int iN = 0; iN < negMuons.size(); iN++){
+    for(unsigned int iP1 = 0; iP1 < posMuons.size(); iP1++){
+      for(unsigned int iP2 = 0; iP2 < posPionsOrKaons.size(); iP2++){
+	auto part1 = ev.at(negMuons.at(iN)).p();
+        auto part2 = ev.at(posMuons.at(iP1)).p();
+        auto part3 = ev.at(posPionsOrKaons.at(iP2)).p();
+        auto massTriplet = part1 + part2 + part3;
+        if((massTriplet).mCalc() > 1.39 &&
+	   (massTriplet).mCalc() < 2.11) {
+                   
+                   if(massTriplet.pT()>14.5){
+                           //std::cout<<" Pion Positive " <<std::endl;
+                           WhetherTwoMuonandPionPosPass = true;
+                           //std::cout<<" Particle 1, x: "<< part1.px() <<" , y: "<< part1.py() <<" , z: "<< part1.pz() <<std::endl;
+                           //std::cout<<" Particle 2, x: "<< part2.px() <<" , y: "<< part2.py() <<" , z: "<< part2.pz() <<std::endl;
+                           //std::cout<<" Particle 3, x: "<< part3.px() <<" , y: "<< part3.py() <<" , z: "<< part3.pz() <<std::endl;
+                           
+                           //double dR12 = std::sqrt(std::pow(part1.eta() - part2.eta(), 2) + std::pow(std::fabs(part1.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part2.phi()) : std::fabs(part1.phi() - part2.phi()), 2));
+                           //double dR13 = std::sqrt(std::pow(part1.eta() - part3.eta(), 2) + std::pow(std::fabs(part1.phi() - part3.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part3.phi()) : std::fabs(part1.phi() - part3.phi()), 2));
+                           //double dR32 = std::sqrt(std::pow(part3.eta() - part2.eta(), 2) + std::pow(std::fabs(part3.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part3.phi() - part2.phi()) : std::fabs(part3.phi() - part2.phi()), 2));
+                           //std::cout<<" dR12: "<< dR12 <<" , dR13: "<< dR13 <<" , dR32: "<< dR32 << " , triplet pT: "<< massTriplet.pT() << " , triplet eta: " << massTriplet.eta() <<std::endl;
+                           
+                           /*
+                           if(OppositeSide.size()>0){
+                           for(unsigned int iO = 0; iO < OppositeSide.size(); iO++){
+                                   if(OppositeSide.at(iO)!=posMuons.at(iP1)&&OppositeSide.at(iO)!=negMuons.at(iN)){
+                                           auto oppVect = ev.at(OppositeSide.at(iO)).p();
+                                           double dRtoOpp = std::sqrt(std::pow(massTriplet.eta() - oppVect.eta(), 2) + std::pow(std::fabs(massTriplet.phi() - oppVect.phi()) > M_PI ? 2 * M_PI - std::fabs(massTriplet.phi() - oppVect.phi()) : std::fabs(massTriplet.phi() - oppVect.phi()), 2));
+                                           std::cout<<" dR to opposite side: "<< dRtoOpp <<" , inv mass: "<< (massTriplet+oppVect).mCalc() <<" , particleID: "<< ev.at(OppositeSide.at(iO)).id() <<std::endl;
+                                           if(dRtoOpp>0.5){
+                                                   return true;
+                                           }
+                                   }
+                           }
+                           }
+                           */
+                           
+                           
+                   }
+           }
+      }
+    }
+  }
+  }
+  
+  //search for negpion+2muons
+  if(negPionsOrKaons.size()>0){
+  for(unsigned int iP = 0; iP < posMuons.size(); iP++){
+    for(unsigned int iN1 = 0; iN1 < negMuons.size(); iN1++){
+      for(unsigned int iN2 = 0; iN2 < negPionsOrKaons.size(); iN2++){
+	auto part1 = ev.at(posMuons.at(iP)).p();
+        auto part2 = ev.at(negMuons.at(iN1)).p();
+        auto part3 = ev.at(negPionsOrKaons.at(iN2)).p();
+        auto massTriplet = part1 + part2 + part3;
+        if((massTriplet).mCalc() > 1.39 &&
+	   (massTriplet).mCalc() < 2.11) {
+                   
+                   if(massTriplet.pT()>14.5){
+                           //std::cout<<" Pion Negative " <<std::endl;
+                           WhetherTwoMuonandPionNegPass = true;
+                           //std::cout<<" Particle 1, x: "<< part1.px() <<" , y: "<< part1.py() <<" , z: "<< part1.pz() <<std::endl;
+                           //std::cout<<" Particle 2, x: "<< part2.px() <<" , y: "<< part2.py() <<" , z: "<< part2.pz() <<std::endl;
+                           //std::cout<<" Particle 3, x: "<< part3.px() <<" , y: "<< part3.py() <<" , z: "<< part3.pz() <<std::endl;
+                           
+                           //double dR12 = std::sqrt(std::pow(part1.eta() - part2.eta(), 2) + std::pow(std::fabs(part1.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part2.phi()) : std::fabs(part1.phi() - part2.phi()), 2));
+                           //double dR13 = std::sqrt(std::pow(part1.eta() - part3.eta(), 2) + std::pow(std::fabs(part1.phi() - part3.phi()) > M_PI ? 2 * M_PI - std::fabs(part1.phi() - part3.phi()) : std::fabs(part1.phi() - part3.phi()), 2));
+                           //double dR32 = std::sqrt(std::pow(part3.eta() - part2.eta(), 2) + std::pow(std::fabs(part3.phi() - part2.phi()) > M_PI ? 2 * M_PI - std::fabs(part3.phi() - part2.phi()) : std::fabs(part3.phi() - part2.phi()), 2));
+                           //std::cout<<" dR12: "<< dR12 <<" , dR13: "<< dR13 <<" , dR32: "<< dR32 << " , triplet pT: "<< massTriplet.pT() << " , triplet eta: " << massTriplet.eta() <<std::endl;
+                           
+                           /*
+                           if(OppositeSide.size()>0){
+                           for(unsigned int iO = 0; iO < OppositeSide.size(); iO++){
+                                   if(OppositeSide.at(iO)!=posMuons.at(iP)&&OppositeSide.at(iO)!=negMuons.at(iN1)){
+                                           auto oppVect = ev.at(OppositeSide.at(iO)).p();
+                                           double dRtoOpp = std::sqrt(std::pow(massTriplet.eta() - oppVect.eta(), 2) + std::pow(std::fabs(massTriplet.phi() - oppVect.phi()) > M_PI ? 2 * M_PI - std::fabs(massTriplet.phi() - oppVect.phi()) : std::fabs(massTriplet.phi() - oppVect.phi()), 2));
+                                           std::cout<<" dR to opposite side: "<< dRtoOpp <<" , inv mass: "<< (massTriplet+oppVect).mCalc() <<" , particleID: "<< ev.at(OppositeSide.at(iO)).id() <<std::endl;
+                                           if(dRtoOpp>0.5){
+                                                   return true;
+                                           }
+                                   }
+                           }
+                           }
+                           */
+                           
+                           
+                   }
+           }
+      }
+    }
+  }
+  }
+  
+  //if(WhetherTwoMuonandPionPosPass||WhetherTwoMuonandPionNegPass&&!(WhetherThreeMuonPosPass||WhetherThreeMuonNegPass)){
+  if(WhetherThreeMuonPosPass||WhetherThreeMuonNegPass){
+          //std::cout<<" Something passed. " <<std::endl;
+          //std::cout<<" WhetherThreeMuonPosPass: "<< WhetherThreeMuonPosPass <<" , WhetherThreeMuonNegPass: "<< WhetherThreeMuonNegPass <<" , WhetherTwoMuonandPionPosPass: "<< WhetherTwoMuonandPionPosPass <<" , WhetherTwoMuonandPionNegPass: "<< WhetherTwoMuonandPionNegPass <<std::endl;
+          return true;
+  }
+  
 
   return false;
   
@@ -919,11 +1186,11 @@ bool Pythia8Hadronizer::generatePartonsAndHadronize()
     if (!fMasterGen->moreDecays()) continue;
     if(ReDecayConditions=="TwoMuMass")
       {
-	if(TwoMuMassFilter(*pythiaEvent)) { std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat; whether_evt_pass = true; break;}
+	if(TwoMuMassFilter(*pythiaEvent)) { std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat+1; whether_evt_pass = true; break;}
       }
     if(ReDecayConditions=="ThreeMuMass")
       {
-	if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat; whether_evt_pass = true; break;}
+	if(ThreeMuMassFilter(*pythiaEvent)){ std::cout<<"nRepeat  "<< iRepeat <<std::endl; final_repetition = iRepeat+1; whether_evt_pass = true; break;}
       }
   }
 
